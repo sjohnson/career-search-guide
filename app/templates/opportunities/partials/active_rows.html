@@ -1,0 +1,3 @@
+{% for opp in active_opportunities %}
+{% with archived=false %}{% include "opportunities/partials/row.html" %}{% endwith %}
+{% endfor %}

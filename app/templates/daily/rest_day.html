@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block page_class %}daily{% endblock %}
+{% block title %}Rest Day — Career Search Guide{% endblock %}
+
+{% block content %}
+<div class="rest-day card">
+  <h1>Sunday — Rest Day</h1>
+  <p>You observe Sundays off. No daily plan today — recharge and come back ready.</p>
+  <p class="rest-date">{{ plan_date.strftime('%A, %B') }} {{ plan_date.day }}, {{ plan_date.year }}</p>
+  <a href="/daily/{{ next_work.isoformat() }}" class="btn btn-primary">Resume Monday</a>
+</div>
+{% endblock %}

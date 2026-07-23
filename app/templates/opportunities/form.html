@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block page_class %}opportunities{% endblock %}
+{% block title %}{% if opportunity %}Edit{% else %}New{% endif %} Opportunity{% endblock %}
+
+{% block content %}
+<div class="page-header"><h1>{% if opportunity %}Edit{% else %}New{% endif %} Opportunity</h1></div>
+<form method="post" action="{% if opportunity %}/opportunities/{{ opportunity.id }}{% else %}/opportunities{% endif %}" class="card form-grid wide">
+  <label>Company<input type="text" name="company" value="{{ opportunity.company if opportunity else '' }}" required></label>
+  <label>Posting URL<input type="url" name="posting_url" value="{{ opportunity.posting_url if opportunity and opportunity.posting_url else '' }}"></label>
+  <label>Remote status
+    <select name="remote_status">
+      <option value="">—</option>
+      {% for rs in remote_statuses %}
+      <option value="{{ rs.value }}" {% if opportunity and opportunity.remote_status == rs.value %}selected{% endif %}>{{ remote_labels[rs.value] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Source
+    <select name="source">
+      <option value="">—</option>
+      {% for src in sources %}
+      <option value="{{ src.value }}" {% if opportunity and opportunity.source == src.value %}selected{% endif %}>{{ source_labels[src.value] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Stack<input type="text" name="stack" value="{{ opportunity.stack if opportunity and opportunity.stack else '' }}" placeholder="Python/Django, C#/.NET"></label>
+  <label>Mission fit<input type="text" name="mission_fit" value="{{ opportunity.mission_fit if opportunity and opportunity.mission_fit else '' }}"></label>
+  <label>Connections<input type="text" name="connections" value="{{ opportunity.connections if opportunity and opportunity.connections else '' }}"></label>
+  <label>Referred by<input type="text" name="referred_by" value="{{ opportunity.referred_by if opportunity and opportunity.referred_by else '' }}"></label>
+  <label>Location<input type="text" name="location_text" value="{{ opportunity.location_text if opportunity and opportunity.location_text else '' }}"></label>
+  <label>Pipeline stage
+    <select name="pipeline_stage">
+      {% for stage in pipeline_stages %}
+      <option value="{{ stage.value }}" {% if (opportunity and opportunity.pipeline_stage == stage.value) or (not opportunity and stage.value == 'new') %}selected{% endif %}>{{ pipeline_labels[stage.value] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Salary min<input type="number" name="salary_min" value="{{ opportunity.salary_min if opportunity and opportunity.salary_min else '' }}"></label>
+  <label>Salary max<input type="number" name="salary_max" value="{{ opportunity.salary_max if opportunity and opportunity.salary_max else '' }}"></label>
+  <label>Currency<input type="text" name="salary_currency" value="{{ opportunity.salary_currency if opportunity and opportunity.salary_currency else 'USD' }}" placeholder="USD"></label>
+  <label>Applied date<input type="date" name="applied_at" value="{{ opportunity.applied_at.isoformat() if opportunity and opportunity.applied_at else '' }}"></label>
+  <label class="full-width">Notes<textarea name="notes" rows="4">{{ notes_text }}</textarea></label>
+  <div class="inline-actions full-width">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="/opportunities" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+{% endblock %}

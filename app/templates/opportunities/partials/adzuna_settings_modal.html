@@ -1,0 +1,52 @@
+<dialog id="adzuna-settings-modal" class="opportunity-modal adzuna-settings-modal" open>
+  <form method="post"
+        action="/opportunities/adzuna/settings"
+        class="form-grid wide"
+        hx-post="/opportunities/adzuna/settings"
+        hx-target="#opportunity-modal-container"
+        hx-swap="innerHTML">
+    <header class="modal-header">
+      <h2>Adzuna search settings</h2>
+      <button type="button" class="btn btn-ghost btn-xs modal-close" onclick="closeAdzunaSettingsModal()">×</button>
+    </header>
+    <p class="meta modal-subtitle">API keys remain in <code>.env</code>. Changes apply on next refresh.</p>
+
+    <label>Search keywords (what)<input type="text" name="search_what" value="{{ adzuna_settings.search_what }}" required></label>
+    <label>Required keyword (what_and)<input type="text" name="search_what_and" value="{{ adzuna_settings.search_what_and }}" required></label>
+    <label>Optional keyword (what_or)<input type="text" name="search_what_or" value="{{ adzuna_settings.search_what_or }}" required></label>
+    <label>Minimum salary<input type="number" name="salary_min" value="{{ adzuna_settings.salary_min }}" required></label>
+    <label>Results to show<input type="number" name="results_limit" value="{{ adzuna_settings.results_limit }}" min="1" max="20" required></label>
+    <label>Default stack (prefill)<input type="text" name="stack_default" value="{{ adzuna_settings.stack_default }}" required></label>
+
+    <h3 class="full-width settings-group-title">Salt Lake City metro</h3>
+    <label>Where<input type="text" name="slc_where" value="{{ adzuna_settings.slc_where }}" required></label>
+    <label>Distance (miles)<input type="number" name="slc_distance" value="{{ adzuna_settings.slc_distance }}" required></label>
+
+    <h3 class="full-width settings-group-title">Virginia (excludes DC metro)</h3>
+    <label>Where<input type="text" name="va_where" value="{{ adzuna_settings.va_where }}" required></label>
+    <label>Distance (miles)<input type="number" name="va_distance" value="{{ adzuna_settings.va_distance }}" required></label>
+
+    <h3 class="full-width settings-group-title">Charlotte metro</h3>
+    <label>Where<input type="text" name="charlotte_where" value="{{ adzuna_settings.charlotte_where }}" required></label>
+    <label>Distance (miles)<input type="number" name="charlotte_distance" value="{{ adzuna_settings.charlotte_distance }}" required></label>
+
+    <div class="inline-actions full-width">
+      <button type="submit" class="btn btn-primary">Save settings</button>
+      <button type="button" class="btn btn-ghost" onclick="closeAdzunaSettingsModal()">Cancel</button>
+    </div>
+  </form>
+</dialog>
+<script>
+  (function () {
+    var dialog = document.getElementById('adzuna-settings-modal');
+    if (dialog && typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    }
+  })();
+  function closeAdzunaSettingsModal() {
+    var dialog = document.getElementById('adzuna-settings-modal');
+    if (dialog) dialog.close();
+    var container = document.getElementById('opportunity-modal-container');
+    if (container) container.innerHTML = '';
+  }
+</script>

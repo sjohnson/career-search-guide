@@ -1,0 +1,7 @@
+<span id="stack-{{ opp.id }}">
+  <input type="text" name="stack" class="inline-text" value="{{ opp.stack or '' }}" placeholder="Stack"
+         hx-patch="/opportunities/{{ opp.id }}/stack"
+         hx-trigger="change, blur changed"
+         hx-swap="outerHTML"
+         hx-target="#stack-{{ opp.id }}">
+</span>

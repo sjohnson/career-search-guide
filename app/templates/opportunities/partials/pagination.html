@@ -1,0 +1,17 @@
+{% if total_pages > 1 %}
+<nav class="table-pagination" aria-label="Opportunities pagination">
+  <span class="pagination-meta">Page {{ page }} of {{ total_pages }} · {{ total }} active</span>
+  {% if page > 1 %}
+  <a href="/opportunities?sort={{ sort_by }}&dir={{ sort_dir }}&page={{ page - 1 }}" class="btn btn-ghost btn-xs">Prev</a>
+  {% else %}
+  <span class="btn btn-ghost btn-xs disabled">Prev</span>
+  {% endif %}
+  {% if page < total_pages %}
+  <a href="/opportunities?sort={{ sort_by }}&dir={{ sort_dir }}&page={{ page + 1 }}" class="btn btn-ghost btn-xs">Next</a>
+  {% else %}
+  <span class="btn btn-ghost btn-xs disabled">Next</span>
+  {% endif %}
+</nav>
+{% elif total > 0 %}
+<p class="pagination-meta subtle">{{ total }} active</p>
+{% endif %}

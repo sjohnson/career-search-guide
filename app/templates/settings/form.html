@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block page_class %}settings{% endblock %}
+{% block title %}Settings — Career Search Guide{% endblock %}
+
+{% block content %}
+<div class="page-header"><h1>Settings</h1></div>
+<form method="post" action="/settings" class="card form-grid">
+  <label class="full-width">Mission statement
+    <textarea name="mission_statement" rows="4" required>{{ settings.mission_statement }}</textarea>
+  </label>
+  <div class="inline-actions">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="/" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+{% endblock %}

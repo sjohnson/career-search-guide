@@ -1,0 +1,11 @@
+<span id="date-kind-master-{{ task.id }}">
+  <select name="date_kind"
+          class="inline-select date-kind-select"
+          hx-patch="/master-tasks/{{ task.id }}/date-kind"
+          hx-trigger="change"
+          hx-swap="outerHTML"
+          hx-target="#date-kind-master-{{ task.id }}">
+    <option value="goal" {% if task.date_kind == 'goal' %}selected{% endif %}>Goal</option>
+    <option value="requirement" {% if task.date_kind == 'requirement' %}selected{% endif %}>Requirement</option>
+  </select>
+</span>

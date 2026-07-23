@@ -1,0 +1,13 @@
+<span id="pipeline-{{ opp.id }}">
+  <select name="pipeline_stage" class="inline-select pipeline-select pipeline-{{ opp.pipeline_stage }}"
+          hx-patch="/opportunities/{{ opp.id }}/pipeline-stage"
+          hx-trigger="change"
+          hx-swap="outerHTML"
+          hx-target="#pipeline-{{ opp.id }}">
+    {% for stage in pipeline_stages %}
+    <option value="{{ stage.value }}" {% if opp.pipeline_stage == stage.value %}selected{% endif %}>
+      {{ pipeline_labels[stage.value] }}
+    </option>
+    {% endfor %}
+  </select>
+</span>

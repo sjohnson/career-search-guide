@@ -1,0 +1,73 @@
+  <div class="adzuna-panel-header">
+    <div>
+      <h2 class="section-title">Suggested jobs (Adzuna)</h2>
+      {% if adzuna.fetched_at %}
+      <p class="meta">Last fetched {{ adzuna.fetched_at.strftime('%Y-%m-%d %H:%M UTC') }}</p>
+      {% endif %}
+    </div>
+    <div class="adzuna-panel-actions">
+      <button type="button"
+              class="btn btn-ghost btn-sm adzuna-settings-btn"
+              title="Adzuna settings"
+              hx-get="/opportunities/adzuna/settings-form"
+              hx-target="#opportunity-modal-container"
+              hx-swap="innerHTML">&#9881;</button>
+      <button type="button"
+              class="btn btn-secondary btn-sm"
+              hx-post="/opportunities/adzuna/refresh"
+              hx-target="#adzuna-panel"
+              hx-swap="outerHTML">
+        Refresh Jobs
+      </button>
+    </div>
+  </div>
+
+  {% if adzuna.error %}
+  <p class="adzuna-message error">{{ adzuna.error }}</p>
+  {% elif not adzuna.jobs %}
+  <p class="adzuna-message">No matching jobs found. Try broadening filters in config or refresh later.</p>
+  {% else %}
+  {% if adzuna.thin_results %}
+  <p class="adzuna-message subtle">Few matches — consider broadening salary or keyword filters.</p>
+  {% endif %}
+  <div class="table-scroll">
+    <table class="data-table adzuna-table compact">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Company</th>
+          <th>Location</th>
+          <th>Salary</th>
+          <th>Remote</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in adzuna.jobs %}
+        <tr>
+          <td>
+            {% if job.redirect_url %}
+            <a href="{{ job.redirect_url }}" target="_blank" rel="noopener">{{ job.title }}</a>
+            {% else %}
+            {{ job.title }}
+            {% endif %}
+          </td>
+          <td>{{ job.company }}</td>
+          <td>{{ job.location or '—' }}</td>
+          <td>{{ job.salary_display() }}</td>
+          <td>{{ adzuna_remote_labels.get(job.inferred_remote_status, job.inferred_remote_status or '—') }}</td>
+          <td>
+            <button type="button"
+                    class="btn btn-primary btn-xs"
+                    hx-get="/opportunities/adzuna/{{ job.adzuna_id }}/add-form"
+                    hx-target="#opportunity-modal-container"
+                    hx-swap="innerHTML">
+              Add
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}

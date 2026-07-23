@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block page_class %}daily{% endblock %}
+{% block title %}Daily Plan — Career Search Guide{% endblock %}
+
+{% block content %}
+<div class="daily-layout">
+  <section class="daily-main">
+    <div class="page-header">
+      <h1>Daily Plan — {{ heading }}</h1>
+      {% if viewing_today %}<span class="badge badge-today">Today</span>{% endif %}
+    </div>
+
+    <div class="daily-nav-row">
+      <a href="/daily/{{ prev_date.isoformat() }}" class="nav-arrow" aria-label="Previous work day">&#9664;</a>
+
+      <div class="task-columns">
+        <section class="task-section">
+          <h2>Active Tasks</h2>
+          {% if active_tasks %}
+          <ul id="active-task-list" class="task-list" data-plan-date="{{ plan_date.isoformat() }}">
+            {% for task in active_tasks %}
+            {% include "daily/partials/task_item.html" %}
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="empty-state">
+            <p>No tasks yet for this day. Add one below, or import from your spreadsheet.</p>
+          </div>
+          {% endif %}
+        </section>
+
+        <section class="task-section completed-section">
+          <h2>Completed &#10024;</h2>
+          {% if completed_tasks %}
+          <ul class="task-list completed-list">
+            {% for task in completed_tasks %}
+            <li class="task-item completed-item">
+              <div class="task-row">
+                <span class="check done">&#10003;</span>
+                <div class="task-body">
+                  <strong>{{ task.title }}</strong>
+                  {% if task.is_master and task.date_kind == 'requirement' %}
+                  <span class="pill pill-requirement">Requirement</span>
+                  {% elif task.is_master %}
+                  <span class="pill pill-goal">Goal</span>
+                  {% endif %}
+                  {% if task.target_date %}
+                  <span class="meta">Target: {{ task.target_date.strftime('%b') }} {{ task.target_date.day }}</span>
+                  {% endif %}
+                  {% if task.is_master %}
+                  <span class="pill pill-master">From Master</span>
+                  {% elif task.is_learning %}
+                  <span class="pill pill-learning">From Learning</span>
+                  {% endif %}
+                  {% if task_notes.get(task.id) %}
+                  <p class="task-notes">{{ task_notes[task.id] }}</p>
+                  {% endif %}
+                </div>
+                <form method="post" action="/daily/items/{{ task.id }}/uncomplete">
+                  <button type="submit" class="btn btn-ghost btn-sm">Undo</button>
+                </form>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="completed-empty">Completed tasks will land here — nice work when they do!</p>
+          {% endif %}
+        </section>
+      </div>
+
+      <a href="/daily/{{ next_date.isoformat() }}" class="nav-arrow" aria-label="Next work day">&#9654;</a>
+    </div>
+
+    <section class="card add-task-card">
+      <h3>Add task for this day</h3>
+      <form method="post" action="/daily/{{ plan_date.isoformat() }}/tasks" class="form-grid">
+        <label>Task
+          <input type="text" name="title" required placeholder="What will you focus on?">
+        </label>
+        <label>Notes
+          <textarea name="notes" rows="2" placeholder="Optional context"></textarea>
+        </label>
+        <label>Type
+          <select name="date_kind">
+            <option value="goal">Goal</option>
+            <option value="requirement">Requirement</option>
+          </select>
+        </label>
+        <label>Target date
+          <input type="date" name="target_date" value="{{ plan_date.isoformat() }}">
+        </label>
+        <button type="submit" class="btn btn-primary">Add task</button>
+      </form>
+    </section>
+  </section>
+
+  <aside class="calendar-panel card" id="calendar-panel">
+    {% include "daily/partials/calendar.html" %}
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/daily.js"></script>
+{% endblock %}

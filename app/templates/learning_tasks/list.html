@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block page_class %}learning-tasks{% endblock %}
+{% from "shared/partials/task_list_row.html" import task_row %}
+{% block title %}Learning Tasks — Career Search Guide{% endblock %}
+
+{% block content %}
+<div class="page-header row-header">
+  <h1>Learning Tasks</h1>
+  <a href="/learning-tasks/new" class="btn btn-primary">New task</a>
+</div>
+
+{% if active_tasks %}
+<ul id="learning-task-list" class="task-list source-task-list" data-reorder-url="/learning-tasks/reorder">
+  {% for task in active_tasks %}
+  {{ task_row(task, 'learning', notes, cal_year, cal_month) }}
+  {% endfor %}
+</ul>
+{% else %}
+<div class="empty-state card">
+  <p>No learning tasks yet.</p>
+  <a href="/learning-tasks/new" class="btn btn-primary">Create learning task</a>
+</div>
+{% endif %}
+
+{% if completed_tasks %}
+<section class="task-section completed-section">
+  <h2>Completed</h2>
+  <ul class="task-list">
+    {% for task in completed_tasks %}
+    {{ task_row(task, 'learning', notes, cal_year, cal_month) }}
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<details class="archived-section card">
+  <summary>Archived tasks ({{ archived_tasks|length }})</summary>
+  {% if archived_tasks %}
+  <ul class="task-list archived-list">
+    {% for task in archived_tasks %}
+    {{ task_row(task, 'learning', notes, cal_year, cal_month) }}
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-state">No archived tasks.</p>
+  {% endif %}
+</details>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/task_lists.js"></script>
+{% endblock %}

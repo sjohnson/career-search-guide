@@ -1,0 +1,9 @@
+{% macro sort_link(label, column, sort_by, sort_dir, page=1) %}
+{% set next_dir = 'desc' if sort_by == column and sort_dir == 'asc' else 'asc' %}
+<a href="/opportunities?sort={{ column }}&dir={{ next_dir }}" class="sort-link">
+  {{ label }}
+  {% if sort_by == column %}
+  <span class="sort-arrow">{% if sort_dir == 'asc' %}&#9650;{% else %}&#9660;{% endif %}</span>
+  {% endif %}
+</a>
+{% endmacro %}

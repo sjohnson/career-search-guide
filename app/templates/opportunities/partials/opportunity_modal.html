@@ -1,0 +1,57 @@
+<dialog id="opportunity-modal" class="opportunity-modal" open>
+  <form method="post" action="/opportunities" class="form-grid wide">
+    <header class="modal-header">
+      <h2>Add opportunity from Adzuna</h2>
+      <button type="button" class="btn btn-ghost btn-xs modal-close" onclick="this.closest('dialog').close(); document.getElementById('opportunity-modal-container').innerHTML='';">×</button>
+    </header>
+    <p class="meta modal-subtitle">{{ job.title }} · {{ job.company }}</p>
+
+    <label>Company<input type="text" name="company" value="{{ prefill.company }}" required></label>
+    <label>Posting URL<input type="url" name="posting_url" value="{{ prefill.posting_url }}"></label>
+    <label>Remote status
+      <select name="remote_status">
+        <option value="">—</option>
+        {% for rs in remote_statuses %}
+        <option value="{{ rs.value }}" {% if prefill.remote_status == rs.value %}selected{% endif %}>{{ remote_labels[rs.value] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Source
+      <select name="source">
+        <option value="">—</option>
+        {% for src in sources %}
+        <option value="{{ src.value }}" {% if prefill.source == src.value %}selected{% endif %}>{{ source_labels[src.value] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Stack<input type="text" name="stack" value="{{ prefill.stack }}"></label>
+    <label>Mission fit<input type="text" name="mission_fit" value=""></label>
+    <label>Connections<input type="text" name="connections" value=""></label>
+    <label>Referred by<input type="text" name="referred_by" value=""></label>
+    <label>Location<input type="text" name="location_text" value="{{ prefill.location_text }}"></label>
+    <label>Pipeline stage
+      <select name="pipeline_stage">
+        {% for stage in pipeline_stages %}
+        <option value="{{ stage.value }}" {% if prefill.pipeline_stage == stage.value %}selected{% endif %}>{{ pipeline_labels[stage.value] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Salary min<input type="number" name="salary_min" value="{{ prefill.salary_min }}"></label>
+    <label>Salary max<input type="number" name="salary_max" value="{{ prefill.salary_max }}"></label>
+    <label>Currency<input type="text" name="salary_currency" value="{{ prefill.salary_currency }}"></label>
+    <label>Applied date<input type="date" name="applied_at" value=""></label>
+    <label class="full-width">Notes<textarea name="notes" rows="6">{{ prefill.notes_text }}</textarea></label>
+    <div class="inline-actions full-width">
+      <button type="submit" class="btn btn-primary">Save opportunity</button>
+      <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close(); document.getElementById('opportunity-modal-container').innerHTML='';">Cancel</button>
+    </div>
+  </form>
+</dialog>
+<script>
+  (function () {
+    var dialog = document.getElementById('opportunity-modal');
+    if (dialog && typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    }
+  })();
+</script>

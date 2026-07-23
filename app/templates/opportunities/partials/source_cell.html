@@ -1,0 +1,14 @@
+<span id="source-{{ opp.id }}">
+  <select name="source" class="inline-select"
+          hx-patch="/opportunities/{{ opp.id }}/source"
+          hx-trigger="change"
+          hx-swap="outerHTML"
+          hx-target="#source-{{ opp.id }}">
+    <option value="">—</option>
+    {% for src in sources %}
+    <option value="{{ src.value }}" {% if opp.source == src.value %}selected{% endif %}>
+      {{ source_labels[src.value] }}
+    </option>
+    {% endfor %}
+  </select>
+</span>

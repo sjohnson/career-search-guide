@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block page_class %}opportunities{% endblock %}
+{% from "opportunities/partials/sort_link.html" import sort_link %}
+{% block title %}Opportunities — Career Search Guide{% endblock %}
+
+{% block content %}
+<div class="page-header row-header">
+  <h1>Opportunities</h1>
+  <a href="/opportunities/new" class="btn btn-primary">New opportunity</a>
+</div>
+
+{% if active_total > 0 %}
+<div class="table-scroll">
+<table class="data-table opportunities-table compact">
+  <thead>
+    <tr>
+      <th>Rank</th>
+      <th>{{ sort_link('Company', 'company', sort_by, sort_dir, page) }}</th>
+      <th>{{ sort_link('Remote', 'remote', sort_by, sort_dir, page) }}</th>
+      <th>{{ sort_link('Source', 'source', sort_by, sort_dir, page) }}</th>
+      <th>{{ sort_link('Stack', 'stack', sort_by, sort_dir, page) }}</th>
+      <th>Mission Fit</th>
+      <th>{{ sort_link('Salary', 'salary', sort_by, sort_dir, page) }}</th>
+      <th>{{ sort_link('Pipeline', 'pipeline', sort_by, sort_dir, page) }}</th>
+      <th>{{ sort_link('Connections', 'connections', sort_by, sort_dir, page) }}</th>
+      <th>{{ sort_link('Referred By', 'referred_by', sort_by, sort_dir, page) }}</th>
+      <th>{{ sort_link('Location', 'location', sort_by, sort_dir, page) }}</th>
+      <th>{{ sort_link('Applied', 'applied', sort_by, sort_dir, page) }}</th>
+      <th>Notes</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="opportunities-active-body">
+    {% include "opportunities/partials/active_rows.html" %}
+  </tbody>
+</table>
+</div>
+<div id="opportunities-pagination">
+  {% include "opportunities/partials/pagination.html" %}
+</div>
+{% else %}
+<div class="empty-state card">
+  <p>No active opportunities tracked yet.</p>
+  <a href="/opportunities/new" class="btn btn-primary">Add opportunity</a>
+</div>
+{% endif %}
+
+{% include "opportunities/partials/adzuna_panel.html" %}
+
+<details class="archived-section card">
+  <summary>Archived opportunities ({{ archived_opportunities|length }})</summary>
+  {% if archived_opportunities %}
+  <div class="table-scroll">
+  <table class="data-table opportunities-table compact archived-table">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Company</th>
+        <th>Remote</th>
+        <th>Source</th>
+        <th>Stack</th>
+        <th>Mission Fit</th>
+        <th>Salary</th>
+        <th>Pipeline</th>
+        <th>Connections</th>
+        <th>Referred By</th>
+        <th>Location</th>
+        <th>Applied</th>
+        <th>Notes</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for opp in archived_opportunities %}
+      {% with archived=true %}{% include "opportunities/partials/row.html" %}{% endwith %}
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="empty-state">No archived opportunities.</p>
+  {% endif %}
+</details>
+
+<div id="opportunity-modal-container"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/opportunities.js"></script>
+{% endblock %}

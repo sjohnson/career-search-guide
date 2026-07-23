@@ -1,0 +1,14 @@
+<span id="remote-{{ opp.id }}">
+  <select name="remote_status" class="inline-select"
+          hx-patch="/opportunities/{{ opp.id }}/remote-status"
+          hx-trigger="change"
+          hx-swap="outerHTML"
+          hx-target="#remote-{{ opp.id }}">
+    <option value="">—</option>
+    {% for rs in remote_statuses %}
+    <option value="{{ rs.value }}" {% if opp.remote_status == rs.value %}selected{% endif %}>
+      {{ remote_labels[rs.value] }}
+    </option>
+    {% endfor %}
+  </select>
+</span>

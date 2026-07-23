@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block page_class %}master-tasks{% endblock %}
+{% block title %}{% if task %}Edit{% else %}New{% endif %} Master Task{% endblock %}
+
+{% block content %}
+<div class="page-header"><h1>{% if task %}Edit{% else %}New{% endif %} Master Task</h1></div>
+<form method="post" action="{% if task %}/master-tasks/{{ task.id }}{% else %}/master-tasks{% endif %}" class="card form-grid">
+  <label>Task<input type="text" name="task" value="{{ task.task if task else '' }}" required></label>
+  <label>Type
+    <select name="date_kind">
+      <option value="goal" {% if not task or task.date_kind == 'goal' %}selected{% endif %}>Goal</option>
+      <option value="requirement" {% if task and task.date_kind == 'requirement' %}selected{% endif %}>Requirement</option>
+    </select>
+  </label>
+  <label>Target completion date
+    <input type="date" name="target_completion_date" value="{{ task.target_completion_date.isoformat() if task and task.target_completion_date else '' }}">
+  </label>
+  <label>Notes<textarea name="notes" rows="4">{{ notes_text }}</textarea></label>
+  <div class="inline-actions">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="/master-tasks" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+{% endblock %}

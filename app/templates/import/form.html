@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block page_class %}import{% endblock %}
+{% block title %}Import — Career Search Guide{% endblock %}
+
+{% block content %}
+<div class="page-header"><h1>Import from Spreadsheet</h1></div>
+
+<div class="card form-grid">
+  {% if error %}
+  <div class="alert alert-error">{{ error }}</div>
+  {% endif %}
+  <p>Export your Google Sheet as <strong>.xlsx</strong> and upload it here. Sheets are matched by tab name: Daily Plan, Master Tasks, Learning Tasks, Opportunities.</p>
+  <form method="post" enctype="multipart/form-data" action="/import">
+    <label>Excel file (.xlsx)
+      <input type="file" name="file" accept=".xlsx,.xls" required>
+    </label>
+    <label>Daily Plan import date (for Daily Plan sheet rows)
+      <input type="date" name="daily_plan_date" value="{{ default_date }}">
+    </label>
+    <label>Import mode
+      <select name="mode">
+        <option value="append">Append (skip duplicates)</option>
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary">Import</button>
+  </form>
+</div>
+{% endblock %}

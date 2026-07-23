@@ -1,0 +1,44 @@
+<tr class="opp-row {{ opp.highlight_class }}" id="opp-row-{{ opp.id }}">
+  <td class="highlight-col">
+    {% if not archived %}
+    {% include "opportunities/partials/highlight_cell.html" %}
+    {% elif opp.highlight_rank %}
+    <span class="medal-label">{% if opp.highlight_rank == 1 %}Gold{% elif opp.highlight_rank == 2 %}Silver{% else %}Bronze{% endif %}</span>
+    {% else %}—{% endif %}
+  </td>
+  <td>
+    <strong>{{ opp.company }}</strong>
+    {% if opp.posting_url %}
+    <a href="{{ opp.posting_url }}" target="_blank" class="posting-link" title="View posting">&#128279;</a>
+    {% endif %}
+  </td>
+  <td>{% if not archived %}{% include "opportunities/partials/remote_status_cell.html" %}{% else %}{{ remote_labels.get(opp.remote_status, opp.remote_status or '—') }}{% endif %}</td>
+  <td>{% if not archived %}{% include "opportunities/partials/source_cell.html" %}{% else %}{{ source_labels.get(opp.source, opp.source or '—') }}{% endif %}</td>
+  <td>{% if not archived %}{% include "opportunities/partials/stack_cell.html" %}{% else %}{{ opp.stack or '—' }}{% endif %}</td>
+  <td>{% if not archived %}{% include "opportunities/partials/mission_fit_cell.html" %}{% else %}{{ opp.mission_fit or '—' }}{% endif %}</td>
+  <td>{{ opp.salary_display }}</td>
+  <td>{% if not archived %}{% include "opportunities/partials/pipeline_cell.html" %}{% else %}<span class="pill pipeline-pill pipeline-{{ opp.pipeline_stage }}">{{ pipeline_labels.get(opp.pipeline_stage, opp.pipeline_stage) }}</span>{% endif %}</td>
+  <td>{{ opp.connections or '—' }}</td>
+  <td>{{ opp.referred_by or '—' }}</td>
+  <td>{{ opp.location_text or '—' }}</td>
+  <td>
+    {% if opp.applied_at %}
+    {{ opp.applied_at.strftime('%Y-%m-%d') }}
+    {% if applied_ages.get(opp.id) is not none %}
+    <span class="meta">({{ applied_ages[opp.id] }}d ago)</span>
+    {% endif %}
+    {% else %}—{% endif %}
+  </td>
+  <td class="notes-cell notes-truncate" tabindex="0" role="button" title="Click to expand notes">{{ notes.get(opp.id, '') or '—' }}</td>
+  <td class="actions">
+    <a href="/opportunities/{{ opp.id }}/edit" class="btn btn-ghost btn-xs">Edit</a>
+    {% if not archived %}
+    <form method="post" action="/opportunities/{{ opp.id }}/archive">
+      <button type="submit" class="btn btn-secondary btn-xs">Archive</button>
+    </form>
+    {% endif %}
+    <form method="post" action="/opportunities/{{ opp.id }}/delete" onsubmit="return confirm('Permanently delete?');">
+      <button type="submit" class="btn btn-danger btn-xs">Delete</button>
+    </form>
+  </td>
+</tr>

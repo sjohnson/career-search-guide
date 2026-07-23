@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Career Search Guide{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="site-header">
+    <div class="app-title-bar">
+      <p class="app-title">Career Search Guide</p>
+    </div>
+    <div class="mission-banner">
+      <p class="mission-label">Mission</p>
+      <p class="mission-text">{{ mission }}</p>
+      <a href="/settings" class="mission-edit" title="Edit mission">Edit</a>
+    </div>
+    <nav class="main-nav">
+      <a href="/" class="nav-link {% if request.url.path.startswith('/daily') or request.url.path == '/' %}active{% endif %}">Daily Plan</a>
+      <a href="/master-tasks" class="nav-link {% if request.url.path.startswith('/master-tasks') %}active{% endif %}">Master Tasks</a>
+      <a href="/learning-tasks" class="nav-link {% if request.url.path.startswith('/learning-tasks') %}active{% endif %}">Learning Tasks</a>
+      <a href="/opportunities" class="nav-link {% if request.url.path.startswith('/opportunities') %}active{% endif %}">Opportunities</a>
+      <a href="/import" class="nav-link {% if request.url.path.startswith('/import') %}active{% endif %}">Import</a>
+    </nav>
+  </header>
+
+  <main class="container {% block page_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p>This custom Python/FastAPI/HTMX app was created by Samuel Johnson and Cursor using agentic workflows.</p>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

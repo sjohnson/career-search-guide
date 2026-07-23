@@ -1,0 +1,7 @@
+<span id="mission-fit-{{ opp.id }}">
+  <input type="text" name="mission_fit" class="inline-text" value="{{ opp.mission_fit or '' }}" placeholder="—"
+         hx-patch="/opportunities/{{ opp.id }}/mission-fit"
+         hx-trigger="change, blur changed"
+         hx-swap="outerHTML"
+         hx-target="#mission-fit-{{ opp.id }}">
+</span>

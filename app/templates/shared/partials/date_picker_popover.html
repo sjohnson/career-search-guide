@@ -1,0 +1,40 @@
+<div class="date-picker-panel card">
+  <div class="calendar-header">
+    {% set prev_month = cal_month - 1 if cal_month > 1 else 12 %}
+    {% set prev_year = cal_year if cal_month > 1 else cal_year - 1 %}
+    {% set next_month = cal_month + 1 if cal_month < 12 else 1 %}
+    {% set next_year = cal_year if cal_month < 12 else cal_year + 1 %}
+    <button type="button" class="cal-nav btn btn-ghost btn-sm"
+            hx-get="/{{ task_type }}-tasks/{{ task_id }}/date-picker?cal_year={{ prev_year }}&cal_month={{ prev_month }}"
+            hx-target="#popover-{{ task_type }}-{{ task_id }}"
+            hx-swap="innerHTML">&#9664;</button>
+    <strong>{{ cal_year }}-{{ '%02d'|format(cal_month) }}</strong>
+    <button type="button" class="cal-nav btn btn-ghost btn-sm"
+            hx-get="/{{ task_type }}-tasks/{{ task_id }}/date-picker?cal_year={{ next_year }}&cal_month={{ next_month }}"
+            hx-target="#popover-{{ task_type }}-{{ task_id }}"
+            hx-swap="innerHTML">&#9654;</button>
+  </div>
+  <table class="calendar-grid date-picker-grid">
+    <thead>
+      <tr><th>S</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th></tr>
+    </thead>
+    <tbody>
+      {% for week in calendar_weeks %}
+      <tr>
+        {% for day in week %}
+        <td>
+          {% if day %}
+          <button type="button"
+                  class="cal-day-btn {% if selected_date and day == selected_date %}cal-selected{% endif %}"
+                  hx-patch="/{{ task_type }}-tasks/{{ task_id }}/target-date"
+                  hx-vals='{"target_completion_date": "{{ day.isoformat() }}"}'
+                  hx-target="#target-date-{{ task_type }}-{{ task_id }}"
+                  hx-swap="outerHTML">{{ day.day }}</button>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

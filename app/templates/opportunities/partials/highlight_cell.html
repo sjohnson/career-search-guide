@@ -1,0 +1,28 @@
+<div class="highlight-controls">
+  <form class="inline-form"
+        hx-post="/opportunities/{{ opp.id }}/highlight/1?sort={{ sort_by }}&dir={{ sort_dir }}&page={{ page }}"
+        hx-target="#opportunities-active-body"
+        hx-swap="innerHTML">
+    <button type="submit" class="medal-btn medal-gold {% if opp.highlight_rank == 1 %}active{% endif %}" title="Gold">&#9733;</button>
+  </form>
+  <form class="inline-form"
+        hx-post="/opportunities/{{ opp.id }}/highlight/2?sort={{ sort_by }}&dir={{ sort_dir }}&page={{ page }}"
+        hx-target="#opportunities-active-body"
+        hx-swap="innerHTML">
+    <button type="submit" class="medal-btn medal-silver {% if opp.highlight_rank == 2 %}active{% endif %}" title="Silver">&#9733;</button>
+  </form>
+  <form class="inline-form"
+        hx-post="/opportunities/{{ opp.id }}/highlight/3?sort={{ sort_by }}&dir={{ sort_dir }}&page={{ page }}"
+        hx-target="#opportunities-active-body"
+        hx-swap="innerHTML">
+    <button type="submit" class="medal-btn medal-bronze {% if opp.highlight_rank == 3 %}active{% endif %}" title="Bronze">&#9733;</button>
+  </form>
+  {% if opp.highlight_rank %}
+  <form class="inline-form"
+        hx-post="/opportunities/{{ opp.id }}/highlight/clear?sort={{ sort_by }}&dir={{ sort_dir }}&page={{ page }}"
+        hx-target="#opportunities-active-body"
+        hx-swap="innerHTML">
+    <button type="submit" class="btn btn-ghost btn-xs clear-highlight-btn" title="Clear highlight">×</button>
+  </form>
+  {% endif %}
+</div>

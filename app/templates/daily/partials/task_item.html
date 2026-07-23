@@ -1,0 +1,57 @@
+<li class="task-item" data-task-id="{{ task.id }}">
+  <div class="task-row">
+    <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
+    <form method="post" action="/daily/items/{{ task.id }}/complete" class="complete-form">
+      <button type="submit" class="check-btn" aria-label="Mark complete">&#9711;</button>
+    </form>
+    <details class="task-details">
+      <summary>
+        <strong>{{ task.title }}</strong>
+        {% if task.is_master and task.date_kind == 'requirement' %}
+        <span class="pill pill-requirement">Requirement</span>
+        {% elif task.is_master %}
+        <span class="pill pill-goal">Goal</span>
+        {% endif %}
+        {% if task.target_date %}
+        <span class="meta">{{ task.target_date.strftime('%b') }} {{ task.target_date.day }}</span>
+        {% endif %}
+        {% if task.is_master %}
+        <span class="pill pill-master">From Master</span>
+        {% elif task.is_learning %}
+        <span class="pill pill-learning">From Learning</span>
+        {% endif %}
+      </summary>
+      <div class="task-edit-panel">
+        {% if task_notes.get(task.id) %}
+        <p class="task-notes">{{ task_notes[task.id] }}</p>
+        {% endif %}
+        {% if task.is_master %}
+        <form method="post" action="/daily/items/{{ task.id }}/update" class="form-grid compact">
+          <label>Title<input type="text" name="title" value="{{ task.title }}" required></label>
+          <label>Notes<textarea name="notes" rows="2">{{ task_notes.get(task.id, '') }}</textarea></label>
+          <label>Type
+            <select name="date_kind">
+              <option value="goal" {% if task.date_kind == 'goal' %}selected{% endif %}>Goal</option>
+              <option value="requirement" {% if task.date_kind == 'requirement' %}selected{% endif %}>Requirement</option>
+            </select>
+          </label>
+          <label>Target date
+            <input type="date" name="target_date" value="{{ task.target_date.isoformat() if task.target_date else '' }}">
+          </label>
+          <div class="inline-actions">
+            <button type="submit" class="btn btn-secondary btn-sm">Save</button>
+          </div>
+        </form>
+        {% endif %}
+        <div class="inline-actions">
+          <form method="post" action="/daily/items/{{ task.id }}/archive">
+            <button type="submit" class="btn btn-secondary btn-sm">Archive</button>
+          </form>
+          <form method="post" action="/daily/items/{{ task.id }}/delete" onsubmit="return confirm('Permanently delete this task?');">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </div>
+    </details>
+  </div>
+</li>

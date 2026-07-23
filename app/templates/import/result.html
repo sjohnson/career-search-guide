@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block page_class %}import{% endblock %}
+{% block title %}Import Results — Career Search Guide{% endblock %}
+
+{% block content %}
+<div class="page-header"><h1>Import Complete</h1></div>
+<div class="card">
+  <h2>Created</h2>
+  <ul>
+    {% for key, count in result.created.items() %}
+    <li>{{ key.replace('_', ' ').title() }}: {{ count }}</li>
+    {% else %}
+    <li>No new records created.</li>
+    {% endfor %}
+  </ul>
+
+  {% if result.warnings %}
+  <h2>Warnings</h2>
+  <ul class="warnings">
+    {% for w in result.warnings %}
+    <li>{{ w }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <div class="inline-actions">
+    <a href="/daily/{{ plan_date.isoformat() }}" class="btn btn-primary">View Daily Plan</a>
+    <a href="/import" class="btn btn-ghost">Import another file</a>
+  </div>
+</div>
+{% endblock %}

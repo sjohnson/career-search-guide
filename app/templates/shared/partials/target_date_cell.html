@@ -1,0 +1,21 @@
+<span id="target-date-{{ task_type }}-{{ task.id }}" class="inline-edit-cell target-date-cell">
+  <button type="button"
+          class="btn btn-ghost btn-sm date-picker-trigger"
+          hx-get="/{{ task_type }}-tasks/{{ task.id }}/date-picker?cal_year={{ cal_year }}&cal_month={{ cal_month }}"
+          hx-target="#popover-{{ task_type }}-{{ task.id }}"
+          hx-swap="innerHTML">
+    {% if task.target_completion_date %}
+      {{ task.target_completion_date.strftime('%Y-%m-%d') }}
+    {% else %}
+      Set date
+    {% endif %}
+  </button>
+  {% if task.target_completion_date %}
+  <button type="button" class="btn btn-ghost btn-sm clear-date-btn"
+          hx-patch="/{{ task_type }}-tasks/{{ task.id }}/target-date"
+          hx-vals='{"target_completion_date": ""}'
+          hx-target="#target-date-{{ task_type }}-{{ task.id }}"
+          hx-swap="outerHTML">×</button>
+  {% endif %}
+  <div id="popover-{{ task_type }}-{{ task.id }}" class="date-picker-popover"></div>
+</span>

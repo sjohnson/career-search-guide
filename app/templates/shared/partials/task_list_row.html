@@ -1,0 +1,53 @@
+{% macro task_row(task, task_type, notes, cal_year, cal_month, show_date_kind=false) %}
+<li class="task-item list-task-item" data-task-id="{{ task.id }}">
+  <div class="task-row list-task-row">
+    <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
+    <div class="list-task-main">
+      <strong>{{ task.task }}</strong>
+      {% if notes.get(task.id) %}
+      <p class="task-notes">{{ notes.get(task.id) }}</p>
+      {% endif %}
+      {% if task_type == 'learning' and task.resource %}
+      <p class="task-resource">
+        {% if task.resource.startswith('http') %}
+        <a href="{{ task.resource }}" target="_blank">{{ task.resource }}</a>
+        {% else %}
+        {{ task.resource }}
+        {% endif %}
+      </p>
+      {% endif %}
+    </div>
+    <div class="list-task-meta">
+      <span class="meta-label">Completed?</span>
+      {% if task.status == 'completed' %}
+      <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/uncomplete">
+        <button type="submit" class="check done" title="Mark not complete">&#10003;</button>
+      </form>
+      {% else %}
+      <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/complete">
+        <button type="submit" class="check-btn" title="Mark complete">&#9711;</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="list-task-meta">
+      <span class="meta-label">Target</span>
+      {% include "shared/partials/target_date_cell.html" %}
+    </div>
+    {% if show_date_kind %}
+    <div class="list-task-meta">
+      <span class="meta-label">Type</span>
+      {% include "shared/partials/date_kind_cell.html" %}
+    </div>
+    {% endif %}
+    <div class="list-task-actions actions">
+      <a href="/{{ task_type }}-tasks/{{ task.id }}/edit" class="btn btn-ghost btn-sm">Edit</a>
+      <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/archive">
+        <button type="submit" class="btn btn-secondary btn-sm">Archive</button>
+      </form>
+      <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/delete" onsubmit="return confirm('Permanently delete this task?');">
+        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+      </form>
+    </div>
+  </div>
+</li>
+{% endmacro %}
