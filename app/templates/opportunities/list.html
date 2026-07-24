@@ -11,7 +11,21 @@
 
 {% if active_total > 0 %}
 <div class="table-scroll">
-<table class="data-table opportunities-table compact">
+<table class="data-table opportunities-table compact opportunities-table-new">
+  <colgroup>
+    <col class="col-rank" style="width: 3.5rem">
+    <col class="col-company" style="width: 9%">
+    <col class="col-remote" style="width: 5.5rem">
+    <col class="col-source" style="width: 11%">
+    <col class="col-stack" style="width: 13%">
+    <col class="col-mission-fit" style="width: 16%">
+    <col class="col-salary" style="width: 7.5rem">
+    <col class="col-connections" style="width: 7%">
+    <col class="col-referred-by" style="width: 8%">
+    <col class="col-location" style="width: 9%">
+    <col class="col-notes" style="width: 12%">
+    <col class="col-actions" style="width: 2.25rem">
+  </colgroup>
   <thead>
     <tr>
       <th>Rank</th>
@@ -21,11 +35,9 @@
       <th>{{ sort_link('Stack', 'stack', sort_by, sort_dir, page) }}</th>
       <th>Mission Fit</th>
       <th>{{ sort_link('Salary', 'salary', sort_by, sort_dir, page) }}</th>
-      <th>{{ sort_link('Pipeline', 'pipeline', sort_by, sort_dir, page) }}</th>
       <th>{{ sort_link('Connections', 'connections', sort_by, sort_dir, page) }}</th>
       <th>{{ sort_link('Referred By', 'referred_by', sort_by, sort_dir, page) }}</th>
       <th>{{ sort_link('Location', 'location', sort_by, sort_dir, page) }}</th>
-      <th>{{ sort_link('Applied', 'applied', sort_by, sort_dir, page) }}</th>
       <th>Notes</th>
       <th></th>
     </tr>
@@ -40,14 +52,16 @@
 </div>
 {% else %}
 <div class="empty-state card">
-  <p>No active opportunities tracked yet.</p>
+  <p>No new opportunities tracked yet.</p>
   <a href="/opportunities/new" class="btn btn-primary">Add opportunity</a>
 </div>
 {% endif %}
 
+{% include "opportunities/partials/follow_up_section.html" %}
+
 {% include "opportunities/partials/adzuna_panel.html" %}
 
-<details class="archived-section card">
+<details id="archived-section" class="archived-section card">
   <summary>Archived opportunities ({{ archived_opportunities|length }})</summary>
   {% if archived_opportunities %}
   <div class="table-scroll">
@@ -72,7 +86,7 @@
     </thead>
     <tbody>
       {% for opp in archived_opportunities %}
-      {% with archived=true %}{% include "opportunities/partials/row.html" %}{% endwith %}
+      {% with archived=true, row_variant='archived' %}{% include "opportunities/partials/row.html" %}{% endwith %}
       {% endfor %}
     </tbody>
   </table>

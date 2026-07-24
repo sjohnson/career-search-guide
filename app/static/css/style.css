@@ -694,6 +694,10 @@ body {
 
 .highlight-col { white-space: nowrap; width: 6rem; }
 
+.opportunities-table-new .highlight-col {
+  width: 3.5rem;
+}
+
 .opportunities-table.compact {
   table-layout: fixed;
   font-size: 0.82rem;
@@ -703,6 +707,68 @@ body {
 .opportunities-table.compact td {
   padding: 0.4rem 0.5rem;
   vertical-align: middle;
+  overflow: hidden;
+}
+
+.opportunities-table.compact .inline-select,
+.opportunities-table.compact .inline-text {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.opportunities-table.compact .inline-text {
+  text-overflow: ellipsis;
+}
+
+.actions-col {
+  width: 2.25rem;
+  padding: 0.2rem !important;
+  text-align: center;
+}
+
+.action-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.action-icon-btn:hover {
+  background: var(--accent-soft);
+}
+
+.action-icon-btn.action-archive {
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.action-icon-btn.action-delete {
+  color: var(--danger);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.action-icon-btn.action-delete:hover {
+  background: #fdecea;
 }
 
 .opportunities-table.compact .opp-row {
@@ -718,7 +784,7 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   cursor: pointer;
-  max-width: 12rem;
+  max-width: none;
 }
 
 .opportunities-table.compact .opp-row.notes-expanded .notes-cell {
@@ -743,6 +809,26 @@ body {
 
 .adzuna-panel {
   margin: 2.5rem 0 1.5rem;
+}
+
+.follow-up-section {
+  margin: 2rem 0;
+}
+
+.follow-up-header {
+  margin-bottom: 0.75rem;
+}
+
+.follow-up-header .section-title {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1.1rem;
+}
+
+.follow-up-table.compact th,
+.follow-up-table.compact td {
+  padding: 0.4rem 0.5rem;
+  vertical-align: middle;
 }
 
 .adzuna-panel-header {
@@ -798,9 +884,20 @@ body {
   border: none;
   border-radius: var(--radius);
   padding: 0;
+  margin: auto;
   max-width: 720px;
   width: min(95vw, 720px);
+  max-height: min(90vh, 900px);
+  overflow-y: auto;
   box-shadow: var(--shadow);
+}
+
+.opportunity-modal:not([open]) {
+  display: none;
+}
+
+#opportunity-modal-container:empty {
+  display: none;
 }
 
 .opportunity-modal::backdrop {
