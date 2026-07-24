@@ -256,6 +256,9 @@ class Opportunity(Base):
     highlight_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
     applied_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     @property
     def salary_display(self) -> str:

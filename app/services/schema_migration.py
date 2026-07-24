@@ -284,6 +284,35 @@ def _migrate_opportunities(db: Session) -> None:
             conn.execute(text("ALTER TABLE opportunities RENAME COLUMN stack_match TO stack"))
         elif not _column_exists(insp, "opportunities", "stack"):
             _add_column_if_missing(conn, insp, "opportunities", "stack", "stack VARCHAR(200)")
+        _add_column_if_missing(
+            conn, insp, "opportunities", "updated_at", "updated_at DATETIME"
+        )
+
+    insp = inspect(engine)
+    if _column_exists(insp, "opportunities", "updated_at"):
+        db.execute(
+            text(
+                "UPDATE opportunities SET updated_at = created_at "
+                "WHERE updated_at IS NULL AND created_at IS NOT NULL"
+            )
+        )
+        db.execute(
+            text("UPDATE opportunities SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL")
+        )
+        db.commit()
+
+    for opp in db.query(Opportunity).all():
+        if not opp.pipeline_stage:
+            opp.pipeline_stage = PipelineStage.NEW.value
+        if not opp.lifecycle_status:
+            opp.lifecycle_status = OpportunityLifecycle.ACTIVE.value
+        if (
+            opp.lifecycle_status == OpportunityLifecycle.ACTIVE.value
+            and opp.pipeline_stage in (PipelineStage.PASSED.value, PipelineStage.CLOSED.value)
+        ):
+            opp.lifecycle_status = OpportunityLifecycle.ARCHIVED.value
+            opp.highlight_rank = None
+    db.commit()
 
     if not _column_exists(inspect(engine), "opportunities", "status"):
         return
@@ -335,8 +364,4 @@ def _migrate_opportunities(db: Session) -> None:
         except Exception:
             pass
 
-    for opp in db.query(Opportunity).all():
-        if not opp.pipeline_stage:
-            opp.pipeline_stage = PipelineStage.NEW.value
-        if not opp.lifecycle_status:
-            opp.lifecycle_status = OpportunityLifecycle.ACTIVE.value
+    db.commit()

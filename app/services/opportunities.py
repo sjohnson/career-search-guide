@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy.orm import Query, Session
 
@@ -35,6 +35,34 @@ def applied_days_ago(applied_at: date | None) -> int | None:
 
 
 OPPORTUNITIES_PER_PAGE = 7
+
+FOLLOW_UP_STAGES = frozenset(
+    {
+        PipelineStage.APPLIED.value,
+        PipelineStage.INTERVIEWING.value,
+        PipelineStage.FOLLOW_UP.value,
+        PipelineStage.OFFER.value,
+    }
+)
+
+ARCHIVE_ON_STAGES = frozenset(
+    {
+        PipelineStage.PASSED.value,
+        PipelineStage.CLOSED.value,
+    }
+)
+
+
+def touch_opportunity(opp: Opportunity) -> None:
+    opp.updated_at = datetime.utcnow()
+
+
+def section_for_stage(stage: str) -> str:
+    if stage == PipelineStage.NEW.value:
+        return "new"
+    if stage in FOLLOW_UP_STAGES:
+        return "follow_up"
+    return "archived"
 
 
 def sort_opportunities(
@@ -125,6 +153,34 @@ def split_opportunities(
     active = [o for o in opps if o.lifecycle_status == OpportunityLifecycle.ACTIVE.value]
     archived = [o for o in opps if o.lifecycle_status == OpportunityLifecycle.ARCHIVED.value]
     return active, archived
+
+
+def split_active_opportunities(
+    active: list[Opportunity],
+) -> tuple[list[Opportunity], list[Opportunity]]:
+    new_opps = [o for o in active if o.pipeline_stage == PipelineStage.NEW.value]
+    follow_up = [o for o in active if o.pipeline_stage in FOLLOW_UP_STAGES]
+    return new_opps, follow_up
+
+
+def sort_follow_up(opps: list[Opportunity]) -> list[Opportunity]:
+    return sorted(opps, key=lambda o: (o.updated_at or o.created_at, o.id))
+
+
+def apply_pipeline_stage_change(db: Session, opp: Opportunity, new_stage: str) -> str:
+    """Update pipeline stage; auto-archive passed/closed. Returns new section name."""
+    old_section = section_for_stage(opp.pipeline_stage)
+    if new_stage in ARCHIVE_ON_STAGES:
+        opp.pipeline_stage = new_stage
+        touch_opportunity(opp)
+        archive_opportunity(db, opp)
+        return "archived"
+    opp.pipeline_stage = new_stage
+    if old_section == "new" and new_stage != PipelineStage.NEW.value:
+        opp.highlight_rank = None
+    touch_opportunity(opp)
+    db.commit()
+    return section_for_stage(new_stage)
 
 
 def normalize_remote_status(value: str | None) -> str | None:
