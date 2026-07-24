@@ -1,8 +1,8 @@
-<dialog id="opportunity-modal" class="opportunity-modal" open>
+<dialog id="opportunity-modal" class="opportunity-modal">
   <form method="post" action="/opportunities" class="form-grid wide">
     <header class="modal-header">
       <h2>Add opportunity from Adzuna</h2>
-      <button type="button" class="btn btn-ghost btn-xs modal-close" onclick="this.closest('dialog').close(); document.getElementById('opportunity-modal-container').innerHTML='';">×</button>
+      <button type="button" class="btn btn-ghost btn-xs modal-close" onclick="closeAppModal()">×</button>
     </header>
     <p class="meta modal-subtitle">{{ job.title }} · {{ job.company }}</p>
 
@@ -43,15 +43,7 @@
     <label class="full-width">Notes<textarea name="notes" rows="6">{{ prefill.notes_text }}</textarea></label>
     <div class="inline-actions full-width">
       <button type="submit" class="btn btn-primary">Save opportunity</button>
-      <button type="button" class="btn btn-ghost" onclick="this.closest('dialog').close(); document.getElementById('opportunity-modal-container').innerHTML='';">Cancel</button>
+      <button type="button" class="btn btn-ghost" onclick="closeAppModal()">Cancel</button>
     </div>
   </form>
 </dialog>
-<script>
-  (function () {
-    var dialog = document.getElementById('opportunity-modal');
-    if (dialog && typeof dialog.showModal === 'function') {
-      dialog.showModal();
-    }
-  })();
-</script>

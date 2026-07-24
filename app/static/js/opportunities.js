@@ -20,15 +20,39 @@ document.addEventListener('keydown', function (event) {
   }
 });
 
+function openAppDialog(dialog) {
+  if (!dialog || typeof dialog.showModal !== 'function') return;
+  if (dialog.open) {
+    dialog.close();
+  }
+  dialog.removeAttribute('open');
+  dialog.showModal();
+}
+
+function closeAppModal() {
+  var container = document.getElementById('opportunity-modal-container');
+  if (!container) return;
+  var dialog = container.querySelector('dialog');
+  if (dialog && dialog.open) {
+    dialog.close();
+  }
+  container.innerHTML = '';
+}
+
+window.closeAppModal = closeAppModal;
+
 document.body.addEventListener('htmx:afterSwap', function (event) {
   if (event.detail.target.id !== 'opportunity-modal-container') return;
-  var oppDialog = document.getElementById('opportunity-modal');
-  if (oppDialog && typeof oppDialog.showModal === 'function') {
-    oppDialog.showModal();
-    return;
+  var dialog = event.detail.target.querySelector('dialog');
+  if (dialog) {
+    openAppDialog(dialog);
   }
-  var settingsDialog = document.getElementById('adzuna-settings-modal');
-  if (settingsDialog && typeof settingsDialog.showModal === 'function') {
-    settingsDialog.showModal();
+});
+
+document.body.addEventListener('htmx:beforeSwap', function (event) {
+  if (event.detail.target.id !== 'opportunity-modal-container') return;
+  var existing = event.detail.target.querySelector('dialog');
+  if (existing && existing.open) {
+    existing.close();
   }
 });
