@@ -124,12 +124,18 @@ Import mode: append with duplicate warnings. Daily Plan rows assigned to user-se
 
 ## Opportunities list behavior
 
-- **Highlight ranks:** Gold / Silver / Bronze (max 3). Assigning a rank cascades down (Gold→Silver→Bronze→cleared). Highlight rank sorts **first** (pinned to top of list before column sort); gold/silver/bronze row styling remains visual.
-- **Pagination:** 7 active rows per page via `?page=N&sort=&dir=`.
+- **Page layout (top to bottom):** New opportunities table → Follow Up table → Adzuna panel → Archived section.
+- **New table:** Active opportunities with `pipeline_stage = new` only. Columns exclude Pipeline and Applied (those apply once tracking begins). Highlight rank sorts first, then column sort. Paginated 7/page.
+- **Follow Up table:** Active opportunities in `applied`, `interviewing`, `follow_up`, or `offer`. Columns: Company, Remote, Mission Fit, Salary, Status (same field as pipeline), Referred By, Location, Notes, Actions. Sorted by `updated_at` ascending (oldest first). All rows shown (no pagination).
+- **Auto-archive:** Setting status to Passed or Closed moves the row to Archived automatically.
+- **`updated_at`:** Bumped on any opportunity edit or inline patch; drives Follow Up sort order.
 - **Compact table:** truncated notes (click row cell to expand); smaller action buttons.
-- **Pipeline stage** drives workflow; free-form detail lives in notes.
 - **Archive** clears highlight rank and moves row to collapsed archived section.
-- **Sortable columns:** server-side via `?sort=&dir=` query params.
+- **Sortable columns (New table):** server-side via `?sort=&dir=` query params.
+
+### Deferred
+
+- Yellow/red stale-row highlighting on Follow Up by days since last update.
 
 ### Adzuna job suggestions
 

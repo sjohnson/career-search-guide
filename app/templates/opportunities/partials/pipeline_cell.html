@@ -1,6 +1,6 @@
 <span id="pipeline-{{ opp.id }}">
   <select name="pipeline_stage" class="inline-select pipeline-select pipeline-{{ opp.pipeline_stage }}"
-          hx-patch="/opportunities/{{ opp.id }}/pipeline-stage"
+          hx-patch="/opportunities/{{ opp.id }}/pipeline-stage?sort={{ sort_by|default('company') }}&dir={{ sort_dir|default('asc') }}&page={{ page|default(1) }}"
           hx-trigger="change"
           hx-swap="outerHTML"
           hx-target="#pipeline-{{ opp.id }}">

@@ -1,0 +1,43 @@
+<section class="follow-up-section card">
+  <div class="follow-up-header">
+    <h2 class="section-title">Follow Up</h2>
+    {% if follow_up_total > 0 %}
+    <p class="meta">{{ follow_up_total }} active — oldest updated first</p>
+    {% endif %}
+  </div>
+  {% if follow_up_total > 0 %}
+  <div class="table-scroll">
+    <table class="data-table opportunities-table compact follow-up-table">
+      <colgroup>
+        <col style="width: 10%">
+        <col style="width: 5.5rem">
+        <col style="width: 16%">
+        <col style="width: 7.5rem">
+        <col style="width: 9%">
+        <col style="width: 8%">
+        <col style="width: 9%">
+        <col style="width: 12%">
+        <col style="width: 2.25rem">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Remote</th>
+          <th>Mission Fit</th>
+          <th>Salary</th>
+          <th>Status</th>
+          <th>Referred By</th>
+          <th>Location</th>
+          <th>Notes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="follow-up-body">
+        {% include "opportunities/partials/follow_up_rows.html" %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty-state subtle">No opportunities in follow-up yet. Change status from New to Applied to track here.</p>
+  {% endif %}
+</section>

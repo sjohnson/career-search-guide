@@ -1,0 +1,16 @@
+<tr class="opp-row follow-up-row" id="opp-row-{{ opp.id }}">
+  <td>
+    <strong>{{ opp.company }}</strong>
+    {% if opp.posting_url %}
+    <a href="{{ opp.posting_url }}" target="_blank" class="posting-link" title="View posting">&#128279;</a>
+    {% endif %}
+  </td>
+  <td>{% include "opportunities/partials/remote_status_cell.html" %}</td>
+  <td>{% include "opportunities/partials/mission_fit_cell.html" %}</td>
+  <td>{{ opp.salary_display }}</td>
+  <td>{% include "opportunities/partials/pipeline_cell.html" %}</td>
+  <td>{{ opp.referred_by or '—' }}</td>
+  <td>{{ opp.location_text or '—' }}</td>
+  <td class="notes-cell notes-truncate" tabindex="0" role="button" title="Click to expand notes">{{ notes.get(opp.id, '') or '—' }}</td>
+  {% with archived=false %}{% include "opportunities/partials/actions_cell.html" %}{% endwith %}
+</tr>

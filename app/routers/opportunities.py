@@ -21,8 +21,10 @@ from app.services.adzuna import bust_adzuna_cache, get_adzuna_jobs, get_cached_j
 from app.services.adzuna_settings import get_or_create_adzuna_settings
 from app.services.daily_plan import get_or_create_settings, get_primary_note_body, set_primary_note
 from app.services.opportunities import (
+    ARCHIVE_ON_STAGES,
     OPPORTUNITIES_PER_PAGE,
     applied_days_ago,
+    apply_pipeline_stage_change,
     archive_opportunity,
     assign_highlight_rank,
     clear_highlight_rank,
@@ -30,8 +32,12 @@ from app.services.opportunities import (
     normalize_remote_status,
     normalize_source,
     paginate_active,
+    section_for_stage,
+    sort_follow_up,
     sort_opportunities,
+    split_active_opportunities,
     split_opportunities,
+    touch_opportunity,
 )
 
 router = APIRouter(prefix="/opportunities", tags=["opportunities"])
@@ -50,6 +56,18 @@ SORTABLE = [
 ]
 
 
+def _table_labels() -> dict:
+    return {
+        "remote_statuses": RemoteStatus,
+        "sources": OpportunitySource,
+        "pipeline_stages": PipelineStage,
+        "remote_labels": REMOTE_STATUS_LABELS,
+        "source_labels": SOURCE_LABELS,
+        "pipeline_labels": PIPELINE_STAGE_LABELS,
+        "archived": False,
+    }
+
+
 def _pagination_context(page: int, total: int, total_pages: int) -> dict:
     return {
         "page": page,
@@ -64,24 +82,23 @@ def _rows_context(db: Session, sort_by: str, sort_dir: str, page: int = 1) -> di
     query = sort_opportunities(query, sort_by, sort_dir)
     all_opps = query.all()
     active_all, archived = split_opportunities(all_opps)
-    active_page, total, total_pages, page = paginate_active(active_all, page)
+    new_opps, follow_up_all = split_active_opportunities(active_all)
+    follow_up_opportunities = sort_follow_up(follow_up_all)
+    active_page, total, total_pages, page = paginate_active(new_opps, page)
     notes = {o.id: get_primary_note_body(db, NoteableType.OPPORTUNITY.value, o.id) for o in all_opps}
     applied_ages = {o.id: applied_days_ago(o.applied_at) for o in all_opps}
     return {
         "active_opportunities": active_page,
         "active_total": total,
+        "follow_up_opportunities": follow_up_opportunities,
+        "follow_up_total": len(follow_up_opportunities),
         "archived_opportunities": archived,
         "notes": notes,
         "applied_ages": applied_ages,
         "sort_by": sort_by,
         "sort_dir": sort_dir,
-        "remote_statuses": RemoteStatus,
-        "sources": OpportunitySource,
-        "pipeline_stages": PipelineStage,
-        "remote_labels": REMOTE_STATUS_LABELS,
-        "source_labels": SOURCE_LABELS,
-        "pipeline_labels": PIPELINE_STAGE_LABELS,
-        "archived": False,
+        "row_variant": "new",
+        **_table_labels(),
         **_pagination_context(page, total, total_pages),
     }
 
@@ -92,8 +109,7 @@ def _list_context(request: Request, db: Session, sort_by: str, sort_dir: str, pa
     ctx = _rows_context(db, sort_by, sort_dir, page)
     ctx["mission"] = settings.mission_statement
     ctx["sortable_columns"] = SORTABLE
-    adzuna = get_adzuna_jobs(adzuna_settings, refresh=False)
-    ctx["adzuna"] = adzuna
+    ctx["adzuna"] = get_adzuna_jobs(adzuna_settings, refresh=False)
     ctx["adzuna_remote_labels"] = REMOTE_STATUS_LABELS
     return ctx
 
@@ -105,6 +121,32 @@ def _active_rows_response(request: Request, db: Session, sort_by: str, sort_dir:
         request,
         "opportunities/partials/active_body_swap.html",
         _rows_context(db, sort_by, sort_dir, page),
+    )
+
+
+def _pipeline_stage_response(
+    request: Request,
+    db: Session,
+    opp: Opportunity,
+    old_section: str,
+    new_section: str,
+    sort_by: str,
+    sort_dir: str,
+    page: int,
+):
+    ctx = _rows_context(db, sort_by, sort_dir, page)
+    ctx["opp"] = opp
+    ctx["section_changed"] = old_section != new_section
+    if ctx["section_changed"]:
+        return templates.TemplateResponse(
+            request,
+            "opportunities/partials/pipeline_stage_swap.html",
+            ctx,
+        )
+    return templates.TemplateResponse(
+        request,
+        "opportunities/partials/pipeline_cell.html",
+        {"opp": opp, **_table_labels()},
     )
 
 
@@ -136,12 +178,7 @@ def new_opportunity(request: Request, db: Session = Depends(get_db)):
             "opportunity": None,
             "notes_text": "",
             "mission": settings.mission_statement,
-            "remote_statuses": RemoteStatus,
-            "sources": OpportunitySource,
-            "pipeline_stages": PipelineStage,
-            "remote_labels": REMOTE_STATUS_LABELS,
-            "source_labels": SOURCE_LABELS,
-            "pipeline_labels": PIPELINE_STAGE_LABELS,
+            **_table_labels(),
         },
     )
 
@@ -165,6 +202,7 @@ def create_opportunity(
     notes: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    stage = normalize_pipeline_stage(pipeline_stage)
     opp = Opportunity(
         company=company.strip(),
         posting_url=posting_url.strip() or None,
@@ -178,7 +216,7 @@ def create_opportunity(
         salary_min=int(salary_min) if salary_min.isdigit() else None,
         salary_max=int(salary_max) if salary_max.isdigit() else None,
         salary_currency=salary_currency.strip() or None,
-        pipeline_stage=normalize_pipeline_stage(pipeline_stage),
+        pipeline_stage=stage,
         lifecycle_status=OpportunityLifecycle.ACTIVE.value,
     )
     if applied_at:
@@ -189,7 +227,11 @@ def create_opportunity(
     db.add(opp)
     db.flush()
     set_primary_note(db, NoteableType.OPPORTUNITY.value, opp.id, notes)
-    db.commit()
+    touch_opportunity(opp)
+    if stage in ARCHIVE_ON_STAGES:
+        archive_opportunity(db, opp)
+    else:
+        db.commit()
     return RedirectResponse(url="/opportunities", status_code=303)
 
 
@@ -281,12 +323,7 @@ def adzuna_add_form(request: Request, adzuna_id: str, db: Session = Depends(get_
             "prefill": prefill,
             "job": job,
             "mission": settings.mission_statement,
-            "remote_statuses": RemoteStatus,
-            "sources": OpportunitySource,
-            "pipeline_stages": PipelineStage,
-            "remote_labels": REMOTE_STATUS_LABELS,
-            "source_labels": SOURCE_LABELS,
-            "pipeline_labels": PIPELINE_STAGE_LABELS,
+            **_table_labels(),
         },
     )
 
@@ -305,12 +342,7 @@ def edit_opportunity(request: Request, opp_id: int, db: Session = Depends(get_db
             "opportunity": opp,
             "notes_text": notes_text,
             "mission": settings.mission_statement,
-            "remote_statuses": RemoteStatus,
-            "sources": OpportunitySource,
-            "pipeline_stages": PipelineStage,
-            "remote_labels": REMOTE_STATUS_LABELS,
-            "source_labels": SOURCE_LABELS,
-            "pipeline_labels": PIPELINE_STAGE_LABELS,
+            **_table_labels(),
         },
     )
 
@@ -350,7 +382,7 @@ def update_opportunity(
     opp.salary_min = int(salary_min) if salary_min.isdigit() else None
     opp.salary_max = int(salary_max) if salary_max.isdigit() else None
     opp.salary_currency = salary_currency.strip() or None
-    opp.pipeline_stage = normalize_pipeline_stage(pipeline_stage)
+    stage = normalize_pipeline_stage(pipeline_stage)
     if applied_at:
         try:
             opp.applied_at = date.fromisoformat(applied_at)
@@ -359,7 +391,15 @@ def update_opportunity(
     else:
         opp.applied_at = None
     set_primary_note(db, NoteableType.OPPORTUNITY.value, opp.id, notes)
-    db.commit()
+    touch_opportunity(opp)
+    if stage in ARCHIVE_ON_STAGES:
+        opp.pipeline_stage = stage
+        archive_opportunity(db, opp)
+    else:
+        opp.pipeline_stage = stage
+        if section_for_stage(stage) != "new":
+            opp.highlight_rank = None
+        db.commit()
     return RedirectResponse(url="/opportunities", status_code=303)
 
 
@@ -424,11 +464,12 @@ def patch_remote_status(
     if not opp:
         return HTMLResponse("", status_code=404)
     opp.remote_status = normalize_remote_status(remote_status)
+    touch_opportunity(opp)
     db.commit()
     return templates.TemplateResponse(
         request,
         "opportunities/partials/remote_status_cell.html",
-        {"opp": opp, "remote_labels": REMOTE_STATUS_LABELS, "remote_statuses": RemoteStatus},
+        {"opp": opp, **_table_labels()},
     )
 
 
@@ -443,11 +484,12 @@ def patch_source(
     if not opp:
         return HTMLResponse("", status_code=404)
     opp.source = normalize_source(source)
+    touch_opportunity(opp)
     db.commit()
     return templates.TemplateResponse(
         request,
         "opportunities/partials/source_cell.html",
-        {"opp": opp, "source_labels": SOURCE_LABELS, "sources": OpportunitySource},
+        {"opp": opp, **_table_labels()},
     )
 
 
@@ -456,18 +498,21 @@ def patch_pipeline_stage(
     request: Request,
     opp_id: int,
     pipeline_stage: str = Form(PipelineStage.NEW.value),
+    sort: str = "company",
+    dir: str = "asc",
+    page: int = 1,
     db: Session = Depends(get_db),
 ):
     opp = db.get(Opportunity, opp_id)
     if not opp:
         return HTMLResponse("", status_code=404)
-    opp.pipeline_stage = normalize_pipeline_stage(pipeline_stage)
-    db.commit()
-    return templates.TemplateResponse(
-        request,
-        "opportunities/partials/pipeline_cell.html",
-        {"opp": opp, "pipeline_labels": PIPELINE_STAGE_LABELS, "pipeline_stages": PipelineStage},
-    )
+    sort_by = sort if sort in SORTABLE else "company"
+    sort_dir = dir if dir in ("asc", "desc") else "asc"
+    old_section = section_for_stage(opp.pipeline_stage)
+    new_stage = normalize_pipeline_stage(pipeline_stage)
+    new_section = apply_pipeline_stage_change(db, opp, new_stage)
+    db.refresh(opp)
+    return _pipeline_stage_response(request, db, opp, old_section, new_section, sort_by, sort_dir, page)
 
 
 @router.patch("/{opp_id}/stack", response_class=HTMLResponse)
@@ -481,6 +526,7 @@ def patch_stack(
     if not opp:
         return HTMLResponse("", status_code=404)
     opp.stack = stack.strip() or None
+    touch_opportunity(opp)
     db.commit()
     return templates.TemplateResponse(
         request,
@@ -500,6 +546,7 @@ def patch_mission_fit(
     if not opp:
         return HTMLResponse("", status_code=404)
     opp.mission_fit = mission_fit.strip() or None
+    touch_opportunity(opp)
     db.commit()
     return templates.TemplateResponse(
         request,
