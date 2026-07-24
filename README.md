@@ -1,6 +1,26 @@
 # Career Search Guide
 
-A local-first career search tracker: Daily Plan hub, Master Tasks, Learning Tasks, Opportunities, and spreadsheet import.
+A local-first app that pulls your job search into one place — daily tasks, longer-horizon work, learning, and opportunities — so you spend less time switching between spreadsheets, notes, and job boards and more time acting on the roles that matter most.
+
+Built to replace (or complement) a Google Sheet workflow with a single, fast UI for tracking what to do today and which companies deserve follow-up.
+
+## What it does
+
+| Area | Purpose |
+|------|---------|
+| **Daily Plan** | Date-scoped to-do list (Mon–Sat). Master and learning tasks auto-appear when due; drag to reorder; goal vs requirement markers. |
+| **Master Tasks** | Bigger career-search work with target dates — feeds the daily plan automatically. |
+| **Learning Tasks** | Skills and resources to study, with the same due-date → daily plan flow. |
+| **Opportunities** | Companies, postings, pipeline stage, salary, highlights, and notes — your active search pipeline in one table. |
+| **Import** | One-shot migration from an existing Google Sheet export (.xlsx). |
+
+### Opportunities highlights
+
+- **New vs Follow Up** — New leads stay in the main table; once you apply or move forward, rows shift to a Follow Up section sorted by last activity (oldest first).
+- **Gold / silver / bronze pins** — Mark your top three prospects; they sort to the top of the New list.
+- **Inline editing** — Pipeline stage, remote status, source, stack, and more update in place via HTMX (no full-page reloads).
+- **Adzuna job feed** (optional) — Merged searches for remote US plus Salt Lake City, Virginia, and Charlotte metros. Add a listing to your pipeline in one click. Configure search terms and result limits via the gear icon; API keys live in `.env`.
+- **Archive** — Passed and closed roles archive automatically; everything else can be archived manually.
 
 ## Stack
 
@@ -12,11 +32,15 @@ A local-first career search tracker: Daily Plan hub, Master Tasks, Learning Task
 ## Setup
 
 ```bash
-cd "/Volumes/Studio Storage/documents/tech/projects/career-search-guide"
+git clone https://github.com/sjohnson/career-search-guide.git
+cd career-search-guide
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env   # optional — only needed for Adzuna
 ```
+
+For Adzuna job suggestions, register at [developer.adzuna.com](https://developer.adzuna.com/) and set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` in `.env`.
 
 ## Run
 
@@ -27,6 +51,8 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
+Schema upgrades for an existing SQLite database run automatically on startup — no manual migration step.
+
 ## Import your Google Sheet
 
 1. Export as `.xlsx` from Google Sheets
@@ -36,10 +62,12 @@ Open [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 Expected sheet tab names: `Daily Plan`, `Master Tasks`, `Learning Tasks`, `Opportunities`.
 
+Import mode is append-only with duplicate warnings.
+
 ## Data
 
 SQLite database: `data/career_search.db`
 
 ## Docs
 
-See [`docs/design_plan.md`](docs/design_plan.md) for architecture, data model, and MVP/later feature split.
+See [`docs/design_plan.md`](docs/design_plan.md) for architecture, data model, and feature notes.
