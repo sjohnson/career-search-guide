@@ -226,6 +226,13 @@ def normalize_pipeline_stage(value: str | None) -> str:
     return stage or PipelineStage.NEW.value
 
 
+def pipeline_stage_with_applied_date(stage: str, applied_at: date | None) -> str:
+    """Promote New to Applied when an applied date is present."""
+    if applied_at and stage == PipelineStage.NEW.value:
+        return PipelineStage.APPLIED.value
+    return stage
+
+
 def _normalize_pipeline_stage_value(value: str | None) -> str | None:
     if not value:
         return None

@@ -32,6 +32,7 @@ from app.services.opportunities import (
     normalize_remote_status,
     normalize_source,
     paginate_active,
+    pipeline_stage_with_applied_date,
     section_for_stage,
     sort_follow_up,
     sort_opportunities,
@@ -390,6 +391,7 @@ def update_opportunity(
             opp.applied_at = None
     else:
         opp.applied_at = None
+    stage = pipeline_stage_with_applied_date(stage, opp.applied_at)
     set_primary_note(db, NoteableType.OPPORTUNITY.value, opp.id, notes)
     touch_opportunity(opp)
     if stage in ARCHIVE_ON_STAGES:
