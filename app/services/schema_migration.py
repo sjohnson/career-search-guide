@@ -55,6 +55,21 @@ def run_schema_migration(db: Session) -> None:
                 "status",
                 "status VARCHAR(20) DEFAULT 'current'",
             )
+            _add_column_if_missing(
+                conn,
+                insp,
+                "master_tasks",
+                "is_recurring",
+                "is_recurring BOOLEAN DEFAULT 0",
+            )
+        if _table_exists(insp, "daily_plan_items"):
+            _add_column_if_missing(
+                conn,
+                insp,
+                "daily_plan_items",
+                "completed_at",
+                "completed_at DATETIME",
+            )
         if _table_exists(insp, "learning_tasks"):
             _add_column_if_missing(
                 conn,

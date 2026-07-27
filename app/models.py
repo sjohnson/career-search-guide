@@ -2,6 +2,7 @@ from datetime import date, datetime
 from enum import Enum
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -106,6 +107,7 @@ class DailyPlanItem(Base):
         ForeignKey("learning_tasks.id", ondelete="CASCADE"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     daily_plan: Mapped["DailyPlan"] = relationship(back_populates="items")
     master_task: Mapped["MasterTask | None"] = relationship(back_populates="plan_items")
@@ -130,8 +132,14 @@ class DailyPlanItem(Base):
 
     @property
     def is_completed(self) -> bool:
+        if self.master_task and self.master_task.is_recurring:
+            return self.completed_at is not None
         source = self.source_task
         return bool(source and source.status == TaskStatus.COMPLETED.value)
+
+    @property
+    def is_recurring(self) -> bool:
+        return bool(self.master_task and self.master_task.is_recurring)
 
     @property
     def date_kind(self) -> str:
@@ -157,9 +165,16 @@ class MasterTask(Base):
     date_kind: Mapped[str] = mapped_column(String(20), default=DateKind.GOAL.value)
     status: Mapped[str] = mapped_column(String(20), default=TaskStatus.CURRENT.value)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     plan_items: Mapped[list["DailyPlanItem"]] = relationship(back_populates="master_task")
+
+    @property
+    def recurrence_start_date(self) -> date | None:
+        if self.target_completion_date:
+            return self.target_completion_date
+        return self.created_at.date() if self.created_at else None
 
 
 class LearningTask(Base):
