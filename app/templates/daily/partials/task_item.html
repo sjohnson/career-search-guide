@@ -20,6 +20,9 @@
         {% elif task.is_learning %}
         <span class="pill pill-learning">From Learning</span>
         {% endif %}
+        {% if task.is_recurring %}
+        <span class="pill pill-recurring">Recurring</span>
+        {% endif %}
       </summary>
       <div class="task-edit-panel">
         {% if task_notes.get(task.id) %}

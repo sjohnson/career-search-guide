@@ -19,6 +19,19 @@ from app.services.daily_plan import (
     uncomplete_source_task,
 )
 
+def _parse_target_date(raw: str) -> date | None:
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
+def _parse_is_recurring(raw: str) -> bool:
+    return raw in {"1", "true", "on", "yes"}
+
+
 router = APIRouter(prefix="/master-tasks", tags=["master_tasks"])
 templates = Jinja2Templates(directory="app/templates")
 
@@ -67,21 +80,21 @@ def create_master_task(
     task: str = Form(...),
     target_completion_date: str = Form(""),
     date_kind: str = Form(DateKind.GOAL.value),
+    is_recurring: str = Form(""),
     notes: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    parsed_date = None
-    if target_completion_date:
-        try:
-            parsed_date = date.fromisoformat(target_completion_date)
-        except ValueError:
-            parsed_date = None
+    parsed_date = _parse_target_date(target_completion_date)
+    recurring = _parse_is_recurring(is_recurring)
+    if recurring and not parsed_date:
+        parsed_date = date.today()
     kind = date_kind if date_kind in {DateKind.GOAL.value, DateKind.REQUIREMENT.value} else DateKind.GOAL.value
     master = MasterTask(
         task=task.strip(),
         priority=0,
         target_completion_date=parsed_date,
         date_kind=kind,
+        is_recurring=recurring,
         status=TaskStatus.CURRENT.value,
     )
     db.add(master)
@@ -112,6 +125,7 @@ def update_master_task(
     task: str = Form(...),
     target_completion_date: str = Form(""),
     date_kind: str = Form(DateKind.GOAL.value),
+    is_recurring: str = Form(""),
     notes: str = Form(""),
     db: Session = Depends(get_db),
 ):
@@ -122,12 +136,11 @@ def update_master_task(
     master.date_kind = (
         date_kind if date_kind in {DateKind.GOAL.value, DateKind.REQUIREMENT.value} else DateKind.GOAL.value
     )
-    parsed_date = None
-    if target_completion_date:
-        try:
-            parsed_date = date.fromisoformat(target_completion_date)
-        except ValueError:
-            parsed_date = None
+    recurring = _parse_is_recurring(is_recurring)
+    parsed_date = _parse_target_date(target_completion_date)
+    if recurring and not parsed_date:
+        parsed_date = master.target_completion_date or date.today()
+    master.is_recurring = recurring
     master.target_completion_date = parsed_date
     set_primary_note(db, NoteableType.MASTER_TASK.value, master.id, notes)
     db.commit()

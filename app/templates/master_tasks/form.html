@@ -14,6 +14,11 @@
   </label>
   <label>Target completion date
     <input type="date" name="target_completion_date" value="{{ task.target_completion_date.isoformat() if task and task.target_completion_date else '' }}">
+    <span class="field-hint" id="target-date-hint">{% if task and task.is_recurring %}Start date — first day this task appears on the Daily Plan{% else %}When this task should appear on the Daily Plan{% endif %}</span>
+  </label>
+  <label class="checkbox-label">
+    <input type="checkbox" name="is_recurring" value="1" id="is-recurring" {% if task and task.is_recurring %}checked{% endif %}>
+    Recurring (appears on each work day's plan until completed on Master Tasks)
   </label>
   <label>Notes<textarea name="notes" rows="4">{{ notes_text }}</textarea></label>
   <div class="inline-actions">
@@ -21,4 +26,20 @@
     <a href="/master-tasks" class="btn btn-ghost">Cancel</a>
   </div>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var cb = document.getElementById('is-recurring');
+  var hint = document.getElementById('target-date-hint');
+  if (!cb || !hint) return;
+  function sync() {
+    hint.textContent = cb.checked
+      ? 'Start date — first day this task appears on the Daily Plan'
+      : 'When this task should appear on the Daily Plan';
+  }
+  cb.addEventListener('change', sync);
+})();
+</script>
 {% endblock %}

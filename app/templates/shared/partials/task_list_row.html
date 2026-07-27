@@ -4,6 +4,9 @@
     <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
     <div class="list-task-main">
       <strong>{{ task.task }}</strong>
+      {% if task_type == 'master' and task.is_recurring %}
+      <span class="pill pill-recurring">Recurring</span>
+      {% endif %}
       {% if notes.get(task.id) %}
       <p class="task-notes">{{ notes.get(task.id) }}</p>
       {% endif %}

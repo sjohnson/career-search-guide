@@ -258,6 +258,25 @@ body {
 .pill-requirement { background: #ffe8e8; color: #9a3030; }
 .pill-master { background: #f0ecff; color: #5a4a8a; }
 .pill-learning { background: #e8f4ff; color: #2a5a8a; }
+.pill-recurring { background: #e8fff0; color: #2a6a4a; }
+
+.field-hint {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted, #666);
+  margin-top: 0.25rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-top: 0.2rem;
+}
 
 .source-task-list .list-task-row {
   display: grid;

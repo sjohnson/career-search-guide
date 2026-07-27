@@ -142,6 +142,7 @@ def create_daily_task(
     notes: str = Form(""),
     date_kind: str = Form(DateKind.GOAL.value),
     target_date: str = Form(""),
+    is_recurring: str = Form(""),
     db: Session = Depends(get_db),
 ):
     parsed_target = plan_date
@@ -151,12 +152,17 @@ def create_daily_task(
         except ValueError:
             parsed_target = plan_date
 
+    recurring = is_recurring in {"1", "true", "on", "yes"}
+    if recurring and not target_date:
+        parsed_target = plan_date
+
     kind = date_kind if date_kind in {DateKind.GOAL.value, DateKind.REQUIREMENT.value} else DateKind.GOAL.value
     master = MasterTask(
         task=title.strip(),
         priority=next_source_priority(db, MasterTask),
         target_completion_date=parsed_target,
         date_kind=kind,
+        is_recurring=recurring,
         status=TaskStatus.CURRENT.value,
     )
     db.add(master)

@@ -52,6 +52,9 @@
                   {% elif task.is_learning %}
                   <span class="pill pill-learning">From Learning</span>
                   {% endif %}
+                  {% if task.is_recurring %}
+                  <span class="pill pill-recurring">Recurring</span>
+                  {% endif %}
                   {% if task_notes.get(task.id) %}
                   <p class="task-notes">{{ task_notes[task.id] }}</p>
                   {% endif %}
@@ -89,6 +92,10 @@
         </label>
         <label>Target date
           <input type="date" name="target_date" value="{{ plan_date.isoformat() }}">
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" name="is_recurring" value="1">
+          Recurring (appears on each work day until completed on Master Tasks)
         </label>
         <button type="submit" class="btn btn-primary">Add task</button>
       </form>

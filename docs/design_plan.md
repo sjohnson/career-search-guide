@@ -70,10 +70,12 @@ We chose **separate `master_tasks` and `learning_tasks` tables plus a thin `dail
 - `priority_order` — daily-only order (independent of source `priority`)
 - Exactly one of: `master_task_id`, `learning_task_id`
 - Unique per plan per source task
+- `completed_at` — per-day completion timestamp for recurring master tasks
 
 ### `master_tasks`
 - `task`, `priority` (hidden sort key; 0 = sort last), `target_completion_date`
 - `date_kind` (`goal`|`requirement`)
+- `is_recurring` — when true, task auto-appears on each work day's plan from start date until completed/archived on Master Tasks
 - `status` (`current`|`completed`|`archived`), `completed_at`
 
 ### `learning_tasks`
@@ -101,9 +103,10 @@ We chose **separate `master_tasks` and `learning_tasks` tables plus a thin `dail
 3. Prev/next navigation skips Sunday
 4. Auto-feed: **`current`** Master/Learning tasks with `target_completion_date == plan_date`
 5. On **today's** plan only: also include overdue incomplete tasks (`target_completion_date < today`)
-6. New tasks created on Daily Plan → create `MasterTask` + join row (always in master list)
-7. Complete/uncomplete on daily plan updates source task `status`
-8. Master tasks listed before learning tasks when auto-assigning; order within group by source `priority`
+6. **Recurring master tasks** (`is_recurring`): auto-add to every work day's plan from start date (`target_completion_date`, or `created_at` if unset) while `status == current`. Checking off on Daily Plan marks only that day's `daily_plan_items.completed_at`; the master task stays `current` and reappears on the next work day. Complete or archive on Master Tasks to stop recurrence.
+7. New tasks created on Daily Plan → create `MasterTask` + join row (always in master list); optional recurring checkbox
+8. Complete/uncomplete on daily plan: non-recurring updates source task `status`; recurring updates plan item `completed_at` only
+9. Master tasks listed before learning tasks when auto-assigning; order within group by source `priority`
 
 ## Assignment triggers
 
