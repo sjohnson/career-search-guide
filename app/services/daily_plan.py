@@ -155,7 +155,10 @@ def _existing_plan_learning_ids(plan: DailyPlan) -> set[int]:
 
 
 def _due_master_query(db: Session, plan_date: date, viewing_today: bool):
-    query = db.query(MasterTask).filter(MasterTask.status == TaskStatus.CURRENT.value)
+    query = db.query(MasterTask).filter(
+        MasterTask.status == TaskStatus.CURRENT.value,
+        MasterTask.is_recurring.is_(False),
+    )
     if viewing_today:
         query = query.filter(
             MasterTask.target_completion_date.isnot(None),
@@ -165,6 +168,19 @@ def _due_master_query(db: Session, plan_date: date, viewing_today: bool):
     else:
         query = query.filter(MasterTask.target_completion_date == plan_date)
     return query
+
+
+def _recurring_master_query(db: Session, plan_date: date):
+    """Current recurring masters whose start date is on or before plan_date."""
+    candidates = (
+        db.query(MasterTask)
+        .filter(
+            MasterTask.status == TaskStatus.CURRENT.value,
+            MasterTask.is_recurring.is_(True),
+        )
+        .all()
+    )
+    return [m for m in candidates if (m.recurrence_start_date or plan_date) <= plan_date]
 
 
 def _due_learning_query(db: Session, plan_date: date, viewing_today: bool):
@@ -186,6 +202,8 @@ def assign_due_tasks(db: Session, plan: DailyPlan, *, viewing_today: bool) -> No
     existing_learning = _existing_plan_learning_ids(plan)
 
     masters = sort_master_tasks(_due_master_query(db, plan.plan_date, viewing_today).all())
+    recurring = sort_master_tasks(_recurring_master_query(db, plan.plan_date))
+    masters = sort_master_tasks(masters + recurring)
     learning = sort_learning_tasks(_due_learning_query(db, plan.plan_date, viewing_today).all())
 
     max_order = max((i.priority_order for i in plan.items), default=-1)
@@ -279,6 +297,10 @@ def assign_for_target_date_change(
 
 
 def complete_plan_item(db: Session, item: DailyPlanItem) -> None:
+    if item.master_task and item.master_task.is_recurring:
+        item.completed_at = datetime.utcnow()
+        db.commit()
+        return
     source = item.source_task
     if not source:
         return
@@ -288,6 +310,10 @@ def complete_plan_item(db: Session, item: DailyPlanItem) -> None:
 
 
 def uncomplete_plan_item(db: Session, item: DailyPlanItem) -> None:
+    if item.master_task and item.master_task.is_recurring:
+        item.completed_at = None
+        db.commit()
+        return
     source = item.source_task
     if not source:
         return
