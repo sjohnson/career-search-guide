@@ -93,10 +93,10 @@
         <label>Target date
           <input type="date" name="target_date" value="{{ plan_date.isoformat() }}">
         </label>
-        <label class="checkbox-label">
-          <input type="checkbox" name="is_recurring" value="1">
-          Recurring (appears on each work day until completed on Master Tasks)
-        </label>
+        <div class="recurring-row">
+          <label for="daily-is-recurring" class="recurring-row-label">Recurring (appears on each work day until completed on Master Tasks)</label>
+          <input type="checkbox" name="is_recurring" value="1" id="daily-is-recurring">
+        </div>
         <button type="submit" class="btn btn-primary">Add task</button>
       </form>
     </section>

@@ -23,12 +23,12 @@
     <div class="list-task-meta">
       <span class="meta-label">Completed?</span>
       {% if task.status == 'completed' %}
-      <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/uncomplete">
-        <button type="submit" class="check done" title="Mark not complete">&#10003;</button>
+      <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/uncomplete" class="complete-form">
+        <input type="checkbox" class="task-complete-cb" checked onchange="this.form.submit()" aria-label="Mark not complete">
       </form>
       {% else %}
-      <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/complete">
-        <button type="submit" class="check-btn" title="Mark complete">&#9711;</button>
+      <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/complete" class="complete-form">
+        <input type="checkbox" class="task-complete-cb" onchange="this.form.submit()" aria-label="Mark complete">
       </form>
       {% endif %}
     </div>
