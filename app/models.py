@@ -83,6 +83,39 @@ class DailyPlan(Base):
         cascade="all, delete-orphan",
         order_by="DailyPlanItem.priority_order",
     )
+    dismissals: Mapped[list["DailyPlanDismissal"]] = relationship(
+        back_populates="daily_plan",
+        cascade="all, delete-orphan",
+    )
+
+
+class DailyPlanDismissal(Base):
+    """Source task intentionally removed from a plan day; blocks auto-assign for that day."""
+
+    __tablename__ = "daily_plan_dismissals"
+    __table_args__ = (
+        UniqueConstraint("daily_plan_id", "master_task_id", name="uq_dismiss_plan_master"),
+        UniqueConstraint("daily_plan_id", "learning_task_id", name="uq_dismiss_plan_learning"),
+        CheckConstraint(
+            "(master_task_id IS NOT NULL AND learning_task_id IS NULL) OR "
+            "(master_task_id IS NULL AND learning_task_id IS NOT NULL)",
+            name="ck_dismiss_single_source",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    daily_plan_id: Mapped[int] = mapped_column(
+        ForeignKey("daily_plans.id", ondelete="CASCADE"), nullable=False
+    )
+    master_task_id: Mapped[int | None] = mapped_column(
+        ForeignKey("master_tasks.id", ondelete="CASCADE"), nullable=True
+    )
+    learning_task_id: Mapped[int | None] = mapped_column(
+        ForeignKey("learning_tasks.id", ondelete="CASCADE"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    daily_plan: Mapped["DailyPlan"] = relationship(back_populates="dismissals")
 
 
 class DailyPlanItem(Base):
@@ -210,6 +243,8 @@ class OpportunitySource(str, Enum):
     LINKEDIN = "linkedin"
     ROBERT_HALF = "robert_half"
     ADZUNA = "adzuna"
+    HACKER_NEWS = "hacker_news"
+    RUBY_ON_REMOTE = "ruby_on_remote"
 
 
 class PipelineStage(str, Enum):
@@ -235,6 +270,8 @@ SOURCE_LABELS = {
     OpportunitySource.LINKEDIN.value: "LinkedIn",
     OpportunitySource.ROBERT_HALF.value: "Robert Half",
     OpportunitySource.ADZUNA.value: "Adzuna",
+    OpportunitySource.HACKER_NEWS.value: "Hacker News",
+    OpportunitySource.RUBY_ON_REMOTE.value: "RubyOnRemote",
 }
 
 PIPELINE_STAGE_LABELS = {

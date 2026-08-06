@@ -215,6 +215,11 @@ def normalize_source(value: str | None) -> str | None:
         "robert half": OpportunitySource.ROBERT_HALF.value,
         "robert_half": OpportunitySource.ROBERT_HALF.value,
         "adzuna": OpportunitySource.ADZUNA.value,
+        "hacker news": OpportunitySource.HACKER_NEWS.value,
+        "hacker_news": OpportunitySource.HACKER_NEWS.value,
+        "rubyonremote": OpportunitySource.RUBY_ON_REMOTE.value,
+        "ruby on remote": OpportunitySource.RUBY_ON_REMOTE.value,
+        "ruby_on_remote": OpportunitySource.RUBY_ON_REMOTE.value,
     }
     return mapping.get(normalized)
 
