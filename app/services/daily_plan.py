@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     DailyPlan,
+    DailyPlanDismissal,
     DailyPlanItem,
     DateKind,
     LearningTask,
@@ -154,6 +155,53 @@ def _existing_plan_learning_ids(plan: DailyPlan) -> set[int]:
     return {i.learning_task_id for i in plan.items if i.learning_task_id is not None}
 
 
+def _dismissed_master_ids(db: Session, plan_id: int) -> set[int]:
+    rows = (
+        db.query(DailyPlanDismissal.master_task_id)
+        .filter(
+            DailyPlanDismissal.daily_plan_id == plan_id,
+            DailyPlanDismissal.master_task_id.isnot(None),
+        )
+        .all()
+    )
+    return {row[0] for row in rows}
+
+
+def _dismissed_learning_ids(db: Session, plan_id: int) -> set[int]:
+    rows = (
+        db.query(DailyPlanDismissal.learning_task_id)
+        .filter(
+            DailyPlanDismissal.daily_plan_id == plan_id,
+            DailyPlanDismissal.learning_task_id.isnot(None),
+        )
+        .all()
+    )
+    return {row[0] for row in rows}
+
+
+def _dismiss_task_for_plan(
+    db: Session,
+    plan_id: int,
+    *,
+    master_task_id: int | None = None,
+    learning_task_id: int | None = None,
+) -> None:
+    query = db.query(DailyPlanDismissal).filter(DailyPlanDismissal.daily_plan_id == plan_id)
+    if master_task_id is not None:
+        query = query.filter(DailyPlanDismissal.master_task_id == master_task_id)
+    else:
+        query = query.filter(DailyPlanDismissal.learning_task_id == learning_task_id)
+    if query.first():
+        return
+    db.add(
+        DailyPlanDismissal(
+            daily_plan_id=plan_id,
+            master_task_id=master_task_id,
+            learning_task_id=learning_task_id,
+        )
+    )
+
+
 def _due_master_query(db: Session, plan_date: date, viewing_today: bool):
     query = db.query(MasterTask).filter(
         MasterTask.status == TaskStatus.CURRENT.value,
@@ -200,6 +248,8 @@ def assign_due_tasks(db: Session, plan: DailyPlan, *, viewing_today: bool) -> No
     """Add master and learning tasks due on plan_date (and overdue when viewing today)."""
     existing_masters = _existing_plan_master_ids(plan)
     existing_learning = _existing_plan_learning_ids(plan)
+    dismissed_masters = _dismissed_master_ids(db, plan.id)
+    dismissed_learning = _dismissed_learning_ids(db, plan.id)
 
     masters = sort_master_tasks(_due_master_query(db, plan.plan_date, viewing_today).all())
     recurring = sort_master_tasks(_recurring_master_query(db, plan.plan_date))
@@ -209,7 +259,7 @@ def assign_due_tasks(db: Session, plan: DailyPlan, *, viewing_today: bool) -> No
     max_order = max((i.priority_order for i in plan.items), default=-1)
 
     for master in masters:
-        if master.id in existing_masters:
+        if master.id in existing_masters or master.id in dismissed_masters:
             continue
         max_order += 1
         db.add(
@@ -222,7 +272,7 @@ def assign_due_tasks(db: Session, plan: DailyPlan, *, viewing_today: bool) -> No
         existing_masters.add(master.id)
 
     for task in learning:
-        if task.id in existing_learning:
+        if task.id in existing_learning or task.id in dismissed_learning:
             continue
         max_order += 1
         db.add(
@@ -330,12 +380,44 @@ def archive_plan_item(db: Session, item: DailyPlanItem) -> None:
     db.commit()
 
 
-def delete_plan_item(db: Session, item: DailyPlanItem) -> None:
-    source = item.source_task
-    db.delete(item)
-    if source:
-        db.delete(source)
+def delete_source_task(db: Session, task: MasterTask | LearningTask) -> None:
+    """Delete a master/learning task and all of its plan placements."""
+    if isinstance(task, MasterTask):
+        db.query(DailyPlanItem).filter(DailyPlanItem.master_task_id == task.id).delete(
+            synchronize_session=False
+        )
+        db.query(DailyPlanDismissal).filter(DailyPlanDismissal.master_task_id == task.id).delete(
+            synchronize_session=False
+        )
+    else:
+        db.query(DailyPlanItem).filter(DailyPlanItem.learning_task_id == task.id).delete(
+            synchronize_session=False
+        )
+        db.query(DailyPlanDismissal).filter(DailyPlanDismissal.learning_task_id == task.id).delete(
+            synchronize_session=False
+        )
+    db.delete(task)
     db.commit()
+
+
+def remove_plan_item(db: Session, item: DailyPlanItem, *, delete_source: bool = False) -> None:
+    """Remove a task from one day's plan. Optionally delete the source master/learning task."""
+    source = item.source_task
+    plan_id = item.daily_plan_id
+    if delete_source and source:
+        delete_source_task(db, source)
+        return
+    if item.master_task_id is not None:
+        _dismiss_task_for_plan(db, plan_id, master_task_id=item.master_task_id)
+    elif item.learning_task_id is not None:
+        _dismiss_task_for_plan(db, plan_id, learning_task_id=item.learning_task_id)
+    db.delete(item)
+    db.commit()
+
+
+def delete_plan_item(db: Session, item: DailyPlanItem) -> None:
+    """Backward-compatible alias; removes from the plan only."""
+    remove_plan_item(db, item, delete_source=False)
 
 
 def archive_source_task(db: Session, task: MasterTask | LearningTask) -> None:

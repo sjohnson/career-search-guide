@@ -19,3 +19,13 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   });
 });
+
+function confirmRemoveTask(form) {
+  const alsoDelete = form.querySelector('[name="delete_source"]')?.checked;
+  if (alsoDelete) {
+    return confirm(
+      "Remove from today's plan and permanently delete this task from your source list?"
+    );
+  }
+  return confirm("Remove this task from today's plan only? It will stay in your source task list.");
+}

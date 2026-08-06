@@ -2,7 +2,7 @@
   <div class="task-row">
     <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
     <form method="post" action="/daily/items/{{ task.id }}/complete" class="complete-form">
-      <button type="submit" class="check-btn" aria-label="Mark complete">&#9711;</button>
+      <input type="checkbox" class="task-complete-cb" onchange="this.form.submit()" aria-label="Mark complete">
     </form>
     <details class="task-details">
       <summary>
@@ -46,12 +46,19 @@
           </div>
         </form>
         {% endif %}
-        <div class="inline-actions">
+        <div class="inline-actions remove-task-actions">
           <form method="post" action="/daily/items/{{ task.id }}/archive">
             <button type="submit" class="btn btn-secondary btn-sm">Archive</button>
           </form>
-          <form method="post" action="/daily/items/{{ task.id }}/delete" onsubmit="return confirm('Permanently delete this task?');">
-            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          <form method="post" action="/daily/items/{{ task.id }}/delete" class="remove-task-form"
+                onsubmit="return confirmRemoveTask(this);">
+            {% if task.is_master or task.is_learning %}
+            <label class="remove-source-option">
+              <input type="checkbox" name="delete_source" value="1">
+              Also delete from {% if task.is_master %}Master{% else %}Learning{% endif %} Tasks
+            </label>
+            {% endif %}
+            <button type="submit" class="btn btn-danger btn-sm">Remove from this day</button>
           </form>
         </div>
       </div>

@@ -11,6 +11,7 @@ from app.services.daily_plan import (
     assign_for_target_date_change,
     archive_source_task,
     complete_source_task,
+    delete_source_task,
     get_or_create_settings,
     get_primary_note_body,
     rewrite_priorities,
@@ -152,8 +153,7 @@ def update_master_task(
 def delete_master_task(task_id: int, db: Session = Depends(get_db)):
     master = db.get(MasterTask, task_id)
     if master:
-        db.delete(master)
-        db.commit()
+        delete_source_task(db, master)
     return RedirectResponse(url="/master-tasks", status_code=303)
 
 

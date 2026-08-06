@@ -12,7 +12,7 @@ from app.services.daily_plan import (
     assign_for_target_date_change,
     build_calendar_weeks,
     complete_plan_item,
-    delete_plan_item,
+    remove_plan_item,
     get_or_create_daily_plan,
     get_or_create_settings,
     get_primary_note_body,
@@ -211,12 +211,17 @@ def archive_item(item_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/daily/items/{item_id}/delete")
-def delete_item(item_id: int, db: Session = Depends(get_db)):
+def delete_item(
+    item_id: int,
+    delete_source: str = Form(""),
+    db: Session = Depends(get_db),
+):
     item = db.get(DailyPlanItem, item_id)
     if not item:
         return RedirectResponse(url="/", status_code=303)
     plan_date = item.daily_plan.plan_date
-    delete_plan_item(db, item)
+    also_delete_source = delete_source in {"1", "true", "on", "yes"}
+    remove_plan_item(db, item, delete_source=also_delete_source)
     return RedirectResponse(url=f"/daily/{plan_date.isoformat()}", status_code=303)
 
 

@@ -11,6 +11,7 @@ from app.services.daily_plan import (
     assign_for_target_date_change,
     archive_source_task,
     complete_source_task,
+    delete_source_task,
     get_or_create_settings,
     get_primary_note_body,
     rewrite_priorities,
@@ -136,8 +137,7 @@ def update_learning_task(
 def delete_learning_task(task_id: int, db: Session = Depends(get_db)):
     learning = db.get(LearningTask, task_id)
     if learning:
-        db.delete(learning)
-        db.commit()
+        delete_source_task(db, learning)
     return RedirectResponse(url="/learning-tasks", status_code=303)
 
 
