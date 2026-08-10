@@ -180,7 +180,7 @@ source venv/bin/activate
 uvicorn app.main:app --reload
 ```
 
-Schema upgrades for existing SQLite files run automatically on startup (`app.services.schema_migration`).
+Schema upgrades run automatically on startup: legacy data migrations in `app.services.schema_migration`, then Alembic (`alembic upgrade head` via `app.services.alembic_runner`). New schema changes belong in numbered files under `alembic/versions/`.
 
 ## Deploy notes (future)
 

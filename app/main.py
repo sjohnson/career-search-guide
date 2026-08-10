@@ -8,6 +8,7 @@ from app.config import DEFAULT_MISSION
 from app.models import AdzunaSettings, Settings
 from app.routers import daily, import_data, learning_tasks, master_tasks, opportunities, settings
 from app.services.adzuna_settings import default_adzuna_settings
+from app.services.alembic_runner import run_alembic_upgrade
 from app.services.schema_migration import run_schema_migration
 
 app = FastAPI(title="Career Search Guide")
@@ -29,6 +30,7 @@ def startup() -> None:
         run_schema_migration(db)
     finally:
         db.close()
+    run_alembic_upgrade()
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:

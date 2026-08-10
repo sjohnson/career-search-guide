@@ -1,4 +1,4 @@
-"""Task sync refactor — schema migration handled at app startup."""
+"""Baseline revision — legacy data migrations run via app.services.schema_migration on startup."""
 
 from alembic import op
 
@@ -9,8 +9,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Data migration is handled at app startup by app.services.schema_migration
-    # so existing SQLite files migrate automatically without a separate alembic run.
+    # One-time legacy/data migrations remain in app.services.schema_migration.
+    # New schema changes belong in numbered Alembic versions under alembic/versions/.
     pass
 
 

@@ -3,6 +3,7 @@
 from datetime import date, datetime
 
 from sqlalchemy import inspect, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.database import engine
@@ -370,13 +371,14 @@ def _migrate_opportunities(db: Session) -> None:
         if not opp.lifecycle_status:
             opp.lifecycle_status = OpportunityLifecycle.ACTIVE.value
 
-    # Drop legacy status column by recreating table if SQLite supports it
+    # Drop legacy status column (SQLite 3.35+). Skip only if column already gone.
     insp = inspect(engine)
     if _column_exists(insp, "opportunities", "status"):
         try:
             with engine.begin() as conn:
                 conn.execute(text("ALTER TABLE opportunities DROP COLUMN status"))
-        except Exception:
-            pass
+        except OperationalError as exc:
+            if "no such column" not in str(exc).lower():
+                raise
 
     db.commit()
