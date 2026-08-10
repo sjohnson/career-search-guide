@@ -685,6 +685,46 @@ body {
 
 .opportunities-table { font-size: 0.9rem; }
 
+.opportunities-sort-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.65rem;
+}
+
+.sort-bar-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.sort-bar-field {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.sort-bar-label-text {
+  color: var(--muted);
+}
+
+.sort-field-select {
+  min-width: 10rem;
+}
+
+.sort-dir-select {
+  min-width: 6.5rem;
+}
+
+.sort-bar-meta {
+  margin: 0;
+}
+
 .opportunities-table th { white-space: nowrap; }
 
 .sort-link {

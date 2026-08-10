@@ -56,3 +56,56 @@ document.body.addEventListener('htmx:beforeSwap', function (event) {
     existing.close();
   }
 });
+
+(function () {
+  var fieldSelect = document.getElementById('opportunities-sort-field');
+  var dirSelect = document.getElementById('opportunities-sort-dir');
+  var sortBar = document.getElementById('opportunities-sort-bar');
+  if (!fieldSelect || !dirSelect || !sortBar) return;
+
+  function fieldType() {
+    var option = fieldSelect.options[fieldSelect.selectedIndex];
+    return option ? option.getAttribute('data-type') || 'text' : 'text';
+  }
+
+  function populateDirectionOptions(preserveDir) {
+    var type = fieldType();
+    var current = preserveDir ? sortBar.getAttribute('data-sort-dir') || 'asc' : dirSelect.value;
+    dirSelect.innerHTML = '';
+    var options =
+      type === 'boolean'
+        ? [
+            { value: 'desc', label: 'Yes first' },
+            { value: 'asc', label: 'No first' },
+          ]
+        : [
+            { value: 'asc', label: 'A \u2192 Z' },
+            { value: 'desc', label: 'Z \u2192 A' },
+          ];
+    options.forEach(function (opt) {
+      var el = document.createElement('option');
+      el.value = opt.value;
+      el.textContent = opt.label;
+      if (opt.value === current) el.selected = true;
+      dirSelect.appendChild(el);
+    });
+    if (!dirSelect.value && options.length) {
+      dirSelect.value = options[0].value;
+    }
+  }
+
+  function navigateSort() {
+    var sort = fieldSelect.value;
+    var dir = dirSelect.value;
+    window.location.href = '/opportunities?sort=' + encodeURIComponent(sort) + '&dir=' + encodeURIComponent(dir) + '&page=1';
+  }
+
+  populateDirectionOptions(true);
+
+  fieldSelect.addEventListener('change', function () {
+    populateDirectionOptions(false);
+    navigateSort();
+  });
+
+  dirSelect.addEventListener('change', navigateSort);
+})();

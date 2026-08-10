@@ -91,7 +91,7 @@ We chose **separate `master_tasks` and `learning_tasks` tables plus a thin `dail
 - `highlight_rank`: 1 (gold), 2 (silver), 3 (bronze), or null — exclusive slots with cascade-down on assign
 - `applied_at`; `equity`, `collaboration_focused` (booleans; form-only, not shown as table columns)
 - notes via polymorphic `notes` table
-- List: sortable columns (server-side), archived collapsed section, medal highlight buttons
+- List: sortable columns (server-side), sort toolbar above New table, archived collapsed section, medal highlight buttons
 
 ### `notes` (polymorphic)
 - `body`, `noteable_type`, `noteable_id`
@@ -130,6 +130,7 @@ Import mode: append with duplicate warnings. Daily Plan rows assigned to user-se
 
 - **Page layout (top to bottom):** New opportunities table → Follow Up table → Adzuna panel → Archived section.
 - **New table:** Active opportunities with `pipeline_stage = new` only. Columns exclude Pipeline and Applied (those apply once tracking begins). Highlight rank sorts first, then column sort. Paginated 7/page.
+- **Sort toolbar:** Above the New table; field + direction dropdowns share the same `?sort=&dir=` URL state as column header links. Toolbar is the primary “current sort” indicator; header arrows show when sorting by a visible column. Hidden sorts (`equity`, `collaboration`) are toolbar-only. Direction labels: text fields use A→Z / Z→A; booleans use Yes first / No first.
 - **Follow Up table:** Active opportunities in `applied`, `interviewing`, `follow_up`, or `offer`. Columns: Company, Remote, Mission Fit, Salary, Status (same field as pipeline), Referred By, Location, Notes, Actions. Sorted by `updated_at` ascending (oldest first). All rows shown (no pagination).
 - **Auto-archive:** Setting status to Passed or Closed moves the row to Archived automatically.
 - **`updated_at`:** Bumped on any opportunity edit or inline patch; drives Follow Up sort order.

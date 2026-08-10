@@ -15,6 +15,21 @@ SORTABLE_COLUMNS = {
     "referred_by": Opportunity.referred_by,
     "location": Opportunity.location_text,
     "applied": Opportunity.applied_at,
+    "equity": Opportunity.equity,
+    "collaboration": Opportunity.collaboration_focused,
+}
+
+SORT_FIELDS = {
+    "company": {"label": "Company", "type": "text", "group": "column"},
+    "remote": {"label": "Remote", "type": "text", "group": "column"},
+    "source": {"label": "Source", "type": "text", "group": "column"},
+    "stack": {"label": "Stack", "type": "text", "group": "column"},
+    "salary": {"label": "Salary", "type": "text", "group": "column"},
+    "connections": {"label": "Connections", "type": "text", "group": "column"},
+    "referred_by": {"label": "Referred By", "type": "text", "group": "column"},
+    "location": {"label": "Location", "type": "text", "group": "column"},
+    "equity": {"label": "Equity", "type": "boolean", "group": "other"},
+    "collaboration": {"label": "Collaboration focused", "type": "boolean", "group": "other"},
 }
 
 

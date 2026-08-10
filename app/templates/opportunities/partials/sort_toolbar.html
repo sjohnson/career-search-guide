@@ -1,0 +1,27 @@
+<div class="opportunities-sort-bar" id="opportunities-sort-bar"
+     data-sort-by="{{ sort_by }}"
+     data-sort-dir="{{ sort_dir }}">
+  <div class="sort-bar-controls">
+    <label class="sort-bar-field">
+      <span class="sort-bar-label-text">Sort</span>
+      <select id="opportunities-sort-field" class="inline-select sort-field-select" aria-label="Sort field">
+        <optgroup label="Columns">
+          {% for key, meta in sort_fields.items() if meta.group == 'column' %}
+          <option value="{{ key }}" data-type="{{ meta.type }}" {% if sort_by == key %}selected{% endif %}>{{ meta.label }}</option>
+          {% endfor %}
+        </optgroup>
+        <optgroup label="Other">
+          {% for key, meta in sort_fields.items() if meta.group == 'other' %}
+          <option value="{{ key }}" data-type="{{ meta.type }}" {% if sort_by == key %}selected{% endif %}>{{ meta.label }}</option>
+          {% endfor %}
+        </optgroup>
+      </select>
+    </label>
+    <label class="sort-bar-field">
+      <select id="opportunities-sort-dir" class="inline-select sort-dir-select" aria-label="Sort direction"></select>
+    </label>
+  </div>
+  <span class="sort-bar-meta pagination-meta">
+    {{ active_total }} new{% if total_pages > 1 %} · page {{ page }} of {{ total_pages }}{% endif %}
+  </span>
+</div>

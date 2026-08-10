@@ -36,6 +36,7 @@ from app.services.opportunities import (
     section_for_stage,
     sort_follow_up,
     sort_opportunities,
+    SORT_FIELDS,
     split_active_opportunities,
     split_opportunities,
     touch_opportunity,
@@ -44,17 +45,7 @@ from app.services.opportunities import (
 router = APIRouter(prefix="/opportunities", tags=["opportunities"])
 templates = Jinja2Templates(directory="app/templates")
 
-SORTABLE = [
-    "company",
-    "remote",
-    "source",
-    "stack",
-    "salary",
-    "pipeline",
-    "connections",
-    "referred_by",
-    "location",
-]
+SORTABLE = list(SORT_FIELDS.keys())
 
 
 def _parse_bool_form(value: str) -> bool:
@@ -102,6 +93,7 @@ def _rows_context(db: Session, sort_by: str, sort_dir: str, page: int = 1) -> di
         "applied_ages": applied_ages,
         "sort_by": sort_by,
         "sort_dir": sort_dir,
+        "sort_fields": SORT_FIELDS,
         "row_variant": "new",
         **_table_labels(),
         **_pagination_context(page, total, total_pages),
