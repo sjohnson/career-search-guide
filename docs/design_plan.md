@@ -89,7 +89,8 @@ We chose **separate `master_tasks` and `learning_tasks` tables plus a thin `dail
 - `pipeline_stage`: `new` | `applied` | `interviewing` | `follow_up` | `offer` | `passed` | `closed`
 - `lifecycle_status`: `active` | `archived`
 - `highlight_rank`: 1 (gold), 2 (silver), 3 (bronze), or null — exclusive slots with cascade-down on assign
-- `applied_at`; notes via polymorphic `notes` table
+- `applied_at`; `equity`, `collaboration_focused` (booleans; form-only, not shown as table columns)
+- notes via polymorphic `notes` table
 - List: sortable columns (server-side), archived collapsed section, medal highlight buttons
 
 ### `notes` (polymorphic)

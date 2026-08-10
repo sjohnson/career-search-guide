@@ -57,6 +57,10 @@ SORTABLE = [
 ]
 
 
+def _parse_bool_form(value: str) -> bool:
+    return value in {"1", "true", "on", "yes"}
+
+
 def _table_labels() -> dict:
     return {
         "remote_statuses": RemoteStatus,
@@ -200,6 +204,8 @@ def create_opportunity(
     salary_currency: str = Form(""),
     pipeline_stage: str = Form(PipelineStage.NEW.value),
     applied_at: str = Form(""),
+    equity: str = Form(""),
+    collaboration_focused: str = Form(""),
     notes: str = Form(""),
     db: Session = Depends(get_db),
 ):
@@ -219,6 +225,8 @@ def create_opportunity(
         salary_currency=salary_currency.strip() or None,
         pipeline_stage=stage,
         lifecycle_status=OpportunityLifecycle.ACTIVE.value,
+        equity=_parse_bool_form(equity),
+        collaboration_focused=_parse_bool_form(collaboration_focused),
     )
     if applied_at:
         try:
@@ -365,6 +373,8 @@ def update_opportunity(
     salary_currency: str = Form(""),
     pipeline_stage: str = Form(PipelineStage.NEW.value),
     applied_at: str = Form(""),
+    equity: str = Form(""),
+    collaboration_focused: str = Form(""),
     notes: str = Form(""),
     db: Session = Depends(get_db),
 ):
@@ -383,6 +393,8 @@ def update_opportunity(
     opp.salary_min = int(salary_min) if salary_min.isdigit() else None
     opp.salary_max = int(salary_max) if salary_max.isdigit() else None
     opp.salary_currency = salary_currency.strip() or None
+    opp.equity = _parse_bool_form(equity)
+    opp.collaboration_focused = _parse_bool_form(collaboration_focused)
     stage = normalize_pipeline_stage(pipeline_stage)
     if applied_at:
         try:

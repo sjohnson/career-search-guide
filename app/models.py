@@ -307,6 +307,8 @@ class Opportunity(Base):
     )
     highlight_rank: Mapped[int | None] = mapped_column(Integer, nullable=True)
     applied_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    equity: Mapped[bool] = mapped_column(Boolean, default=False)
+    collaboration_focused: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow

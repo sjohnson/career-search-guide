@@ -40,6 +40,14 @@
     <label>Salary max<input type="number" name="salary_max" value="{{ prefill.salary_max }}"></label>
     <label>Currency<input type="text" name="salary_currency" value="{{ prefill.salary_currency }}"></label>
     <label>Applied date<input type="date" name="applied_at" value=""></label>
+    <div class="recurring-row">
+      <label for="modal-opp-equity" class="recurring-row-label">Equity?</label>
+      <input type="checkbox" name="equity" value="1" id="modal-opp-equity">
+    </div>
+    <div class="recurring-row">
+      <label for="modal-opp-collaboration" class="recurring-row-label">Collaboration focused?</label>
+      <input type="checkbox" name="collaboration_focused" value="1" id="modal-opp-collaboration">
+    </div>
     <label class="full-width">Notes<textarea name="notes" rows="6">{{ prefill.notes_text }}</textarea></label>
     <div class="inline-actions full-width">
       <button type="submit" class="btn btn-primary">Save opportunity</button>
