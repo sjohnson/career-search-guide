@@ -2,6 +2,7 @@
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 revision = "002_daily_plan_dismissals"
 down_revision = "001_task_sync_refactor"
@@ -10,6 +11,10 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if "daily_plan_dismissals" in inspect(bind).get_table_names():
+        return
+
     op.create_table(
         "daily_plan_dismissals",
         sa.Column("id", sa.Integer(), primary_key=True),
