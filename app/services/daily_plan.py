@@ -1,6 +1,8 @@
 from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.models import (
     DailyPlan,
@@ -85,7 +87,14 @@ def get_or_create_settings(db: Session) -> Settings:
 
 
 def get_or_create_daily_plan(db: Session, plan_date: date, *, assign: bool = True) -> tuple[DailyPlan, bool]:
-    plan = db.query(DailyPlan).filter(DailyPlan.plan_date == plan_date).first()
+    plan = db.scalars(
+        select(DailyPlan)
+        .filter(DailyPlan.plan_date == plan_date)
+        .options(
+            selectinload(DailyPlan.items).selectinload(DailyPlanItem.master_task),
+            selectinload(DailyPlan.items).selectinload(DailyPlanItem.learning_task),
+        )
+    ).first()
     created = False
     if not plan:
         plan = DailyPlan(plan_date=plan_date)
