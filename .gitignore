@@ -20,4 +20,3 @@ build/
 htmlcov/
 .pytest_cache/
 uploads/
-.env.example
