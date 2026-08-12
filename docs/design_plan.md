@@ -169,6 +169,15 @@ Import mode: append with duplicate warnings. Daily Plan rows assigned to user-se
 
 Each page template sets `{% block page_class %}` on the shared `<main>` in `base.html`, e.g. `<main class="container opportunities">`. Slugs: `daily`, `master-tasks`, `learning-tasks`, `opportunities`, `import`, `settings`.
 
+## Auth and security
+
+- **Authentication:** session cookies via Starlette `SessionMiddleware`; `user_id` in signed session after bcrypt password verify. `AuthMiddleware` gates all routes except login/register/logout and static assets.
+- **Registration:** bootstrap UI when no users exist; `python -m app.cli create-user` for ops; optional `ALLOW_REGISTRATION=true` in dev.
+- **Authorization:** deferred — login gates the app; task/opportunity rows are not yet scoped by `user_id`.
+- **CSRF:** session-stored token on mutating requests (form field or `X-CSRF-Token` header for HTMX).
+- **CORS:** intentionally omitted — same-origin server-rendered HTML app; add `CORSMiddleware` only if a separate SPA/API client is introduced.
+- **SQL:** application routes use SQLAlchemy ORM; raw SQL is limited to legacy startup migrations in `schema_migration.py` (internal table/column names only).
+
 ## Context management
 
 - Keep this file updated when decisions change

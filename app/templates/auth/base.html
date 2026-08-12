@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Career Search Guide{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .auth-page { max-width: 420px; margin: 3rem auto; }
+    .auth-page h1 { margin-bottom: 1rem; }
+    .auth-form label { display: block; margin-top: 1rem; font-weight: 600; }
+    .auth-form input { width: 100%; margin-top: 0.35rem; padding: 0.5rem; }
+    .auth-form button { margin-top: 1.25rem; padding: 0.5rem 1rem; }
+    .auth-error { color: #b00020; margin-top: 1rem; }
+    .auth-links { margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <main class="container auth-page">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

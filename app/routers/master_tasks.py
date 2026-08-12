@@ -2,7 +2,6 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -33,8 +32,9 @@ def _parse_is_recurring(raw: str) -> bool:
     return raw in {"1", "true", "on", "yes"}
 
 
+from app.templating import templates
+
 router = APIRouter(prefix="/master-tasks", tags=["master_tasks"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 def _split_tasks(tasks: list[MasterTask]) -> tuple[list[MasterTask], list[MasterTask], list[MasterTask]]:

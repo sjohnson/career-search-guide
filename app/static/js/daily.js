@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       await fetch(`/daily/${planDate}/reorder`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: csrfHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ order }),
       });
     },

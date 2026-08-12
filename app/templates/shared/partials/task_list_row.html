@@ -24,10 +24,12 @@
       <span class="meta-label">Completed?</span>
       {% if task.status == 'completed' %}
       <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/uncomplete" class="complete-form">
+        {% include "shared/partials/csrf_input.html" %}
         <input type="checkbox" class="task-complete-cb" checked onchange="this.form.submit()" aria-label="Mark not complete">
       </form>
       {% else %}
       <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/complete" class="complete-form">
+        {% include "shared/partials/csrf_input.html" %}
         <input type="checkbox" class="task-complete-cb" onchange="this.form.submit()" aria-label="Mark complete">
       </form>
       {% endif %}
@@ -45,9 +47,11 @@
     <div class="list-task-actions actions">
       <a href="/{{ task_type }}-tasks/{{ task.id }}/edit" class="btn btn-ghost btn-sm">Edit</a>
       <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/archive">
+        {% include "shared/partials/csrf_input.html" %}
         <button type="submit" class="btn btn-secondary btn-sm">Archive</button>
       </form>
       <form method="post" action="/{{ task_type }}-tasks/{{ task.id }}/delete" onsubmit="return confirm('Permanently delete this task?');">
+        {% include "shared/partials/csrf_input.html" %}
         <button type="submit" class="btn btn-danger btn-sm">Delete</button>
       </form>
     </div>

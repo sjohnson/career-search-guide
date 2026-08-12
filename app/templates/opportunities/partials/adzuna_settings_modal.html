@@ -5,6 +5,7 @@
         hx-post="/opportunities/adzuna/settings"
         hx-target="#opportunity-modal-container"
         hx-swap="innerHTML">
+    {% include "shared/partials/csrf_input.html" %}
     <header class="modal-header">
       <h2>Adzuna search settings</h2>
       <button type="button" class="btn btn-ghost btn-xs modal-close" onclick="closeAppModal()">×</button>

@@ -34,6 +34,10 @@ body {
 }
 
 .app-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 0.45rem 1.5rem;
   background: linear-gradient(90deg, #1e4a3f, #244f43);
   color: #e8f5f0;
@@ -47,6 +51,15 @@ body {
   font-weight: 400;
   letter-spacing: 0.02em;
   opacity: 0.92;
+}
+
+.logout-form {
+  margin: 0;
+}
+
+.logout-form button {
+  color: #e8f5f0;
+  border-color: rgba(232, 245, 240, 0.35);
 }
 
 .mission-banner {

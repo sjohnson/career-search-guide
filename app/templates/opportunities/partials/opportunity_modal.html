@@ -1,5 +1,6 @@
 <dialog id="opportunity-modal" class="opportunity-modal">
   <form method="post" action="/opportunities" class="form-grid wide">
+    {% include "shared/partials/csrf_input.html" %}
     <header class="modal-header">
       <h2>Add opportunity from Adzuna</h2>
       <button type="button" class="btn btn-ghost btn-xs modal-close" onclick="closeAppModal()">×</button>

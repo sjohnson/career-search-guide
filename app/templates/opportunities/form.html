@@ -5,6 +5,7 @@
 {% block content %}
 <div class="page-header"><h1>{% if opportunity %}Edit{% else %}New{% endif %} Opportunity</h1></div>
 <form method="post" action="{% if opportunity %}/opportunities/{{ opportunity.id }}{% else %}/opportunities{% endif %}" class="card form-grid wide">
+  {% include "shared/partials/csrf_input.html" %}
   <label>Company<input type="text" name="company" value="{{ opportunity.company if opportunity else '' }}" required></label>
   <label>Posting URL<input type="url" name="posting_url" value="{{ opportunity.posting_url if opportunity and opportunity.posting_url else '' }}"></label>
   <label>Remote status

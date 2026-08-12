@@ -11,6 +11,7 @@
   {% endif %}
   <p>Export your Google Sheet as <strong>.xlsx</strong> and upload it here. Sheets are matched by tab name: Daily Plan, Master Tasks, Learning Tasks, Opportunities.</p>
   <form method="post" enctype="multipart/form-data" action="/import">
+    {% include "shared/partials/csrf_input.html" %}
     <label>Excel file (.xlsx)
       <input type="file" name="file" accept=".xlsx,.xls" required>
     </label>

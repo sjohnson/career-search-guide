@@ -60,6 +60,7 @@
                   {% endif %}
                 </div>
                 <form method="post" action="/daily/items/{{ task.id }}/uncomplete">
+                  {% include "shared/partials/csrf_input.html" %}
                   <button type="submit" class="btn btn-ghost btn-sm">Undo</button>
                 </form>
               </div>
@@ -78,6 +79,7 @@
     <section class="card add-task-card">
       <h3>Add task for this day</h3>
       <form method="post" action="/daily/{{ plan_date.isoformat() }}/tasks" class="form-grid">
+        {% include "shared/partials/csrf_input.html" %}
         <label>Task
           <input type="text" name="title" required placeholder="What will you focus on?">
         </label>

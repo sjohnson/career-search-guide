@@ -3,10 +3,12 @@
     <a href="/opportunities/{{ opp.id }}/edit" class="action-icon-btn action-edit" title="Edit" aria-label="Edit">&#9998;</a>
     {% if not archived %}
     <form method="post" action="/opportunities/{{ opp.id }}/archive" class="inline-form">
+      {% include "shared/partials/csrf_input.html" %}
       <button type="submit" class="action-icon-btn action-archive" title="Archive" aria-label="Archive">&#8635;</button>
     </form>
     {% endif %}
     <form method="post" action="/opportunities/{{ opp.id }}/delete" class="inline-form" onsubmit="return confirm('Permanently delete?');">
+      {% include "shared/partials/csrf_input.html" %}
       <button type="submit" class="action-icon-btn action-delete" title="Delete" aria-label="Delete">&#10005;</button>
     </form>
   </div>

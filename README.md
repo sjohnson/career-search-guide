@@ -37,7 +37,13 @@ cd career-search-guide
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # optional — only needed for Adzuna
+cp .env.example .env
+```
+
+Set `SECRET_KEY` in `.env` (required for session cookies). Generate one with:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
 For Adzuna job suggestions, register at [developer.adzuna.com](https://developer.adzuna.com/) and set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` in `.env`.
@@ -53,6 +59,14 @@ Open [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 On first launch, the app creates `data/career_search.db` automatically. Schema upgrades for an existing SQLite database also run on startup — no manual migration step.
 
+**First account:** if no users exist yet, visit `/register` to create one. Otherwise log in at `/login`, or create an account from the CLI:
+
+```bash
+python -m app.cli create-user --email you@example.com --allow-existing
+```
+
+The app uses signed session cookies (not JWT) and bcrypt password hashing. CORS is intentionally omitted — this is a same-origin server-rendered app.
+
 ## Tests
 
 ```bash
@@ -63,7 +77,7 @@ pytest tests/test_opportunities.py    # one file
 pytest -k "pipeline"                  # name filter (like RSpec -e)
 ```
 
-Tests live in `tests/` and cover core service logic (no server or database required).
+Tests live in `tests/` and cover core service logic plus auth/security behavior.
 
 ## Import your Google Sheet
 

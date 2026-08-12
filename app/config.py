@@ -20,6 +20,22 @@ DEFAULT_MISSION = (
 
 ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID", "")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY", "")
+
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+ALLOW_REGISTRATION = os.getenv("ALLOW_REGISTRATION", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+SESSION_HTTPS_ONLY = os.getenv("SESSION_HTTPS_ONLY", "false").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+
+IMPORT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 ADZUNA_CACHE_TTL_SECONDS = 4 * 60 * 60
 ADZUNA_SALARY_MIN = 140_000
 ADZUNA_RESULTS_LIMIT = 10

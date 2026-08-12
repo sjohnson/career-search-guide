@@ -5,6 +5,7 @@
 {% block content %}
 <div class="page-header"><h1>Settings</h1></div>
 <form method="post" action="/settings" class="card form-grid">
+  {% include "shared/partials/csrf_input.html" %}
   <label class="full-width">Mission statement
     <textarea name="mission_statement" rows="4" required>{{ settings.mission_statement }}</textarea>
   </label>

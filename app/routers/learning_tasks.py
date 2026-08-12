@@ -2,7 +2,6 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -19,9 +18,9 @@ from app.services.daily_plan import (
     sort_learning_tasks,
     uncomplete_source_task,
 )
+from app.templating import templates
 
 router = APIRouter(prefix="/learning-tasks", tags=["learning_tasks"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 def _split_tasks(tasks: list[LearningTask]) -> tuple[list[LearningTask], list[LearningTask], list[LearningTask]]:

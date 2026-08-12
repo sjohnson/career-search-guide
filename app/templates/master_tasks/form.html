@@ -5,6 +5,7 @@
 {% block content %}
 <div class="page-header"><h1>{% if task %}Edit{% else %}New{% endif %} Master Task</h1></div>
 <form method="post" action="{% if task %}/master-tasks/{{ task.id }}{% else %}/master-tasks{% endif %}" class="card form-grid">
+  {% include "shared/partials/csrf_input.html" %}
   <label>Task<input type="text" name="task" value="{{ task.task if task else '' }}" required></label>
   <label>Type
     <select name="date_kind">

@@ -5,6 +5,7 @@
 {% block content %}
 <div class="page-header"><h1>{% if task %}Edit{% else %}New{% endif %} Learning Task</h1></div>
 <form method="post" action="{% if task %}/learning-tasks/{{ task.id }}{% else %}/learning-tasks{% endif %}" class="card form-grid">
+  {% include "shared/partials/csrf_input.html" %}
   <label>Task<input type="text" name="task" value="{{ task.task if task else '' }}" required></label>
   <label>Resource<input type="text" name="resource" value="{{ task.resource if task and task.resource else '' }}" placeholder="URL or book name"></label>
   <label>Target completion date

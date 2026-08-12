@@ -3,16 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{% block title %}Career Search Guide{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+  <script>
+    function csrfHeaders(extra) {
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      const headers = Object.assign({}, extra || {});
+      if (token) {
+        headers["X-CSRF-Token"] = token;
+      }
+      return headers;
+    }
+
+    document.addEventListener("htmx:configRequest", (event) => {
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      if (token) {
+        event.detail.headers["X-CSRF-Token"] = token;
+      }
+    });
+  </script>
   {% block head %}{% endblock %}
 </head>
 <body>
   <header class="site-header">
     <div class="app-title-bar">
       <p class="app-title">Career Search Guide</p>
+      <form method="post" action="/logout" class="logout-form">
+        {% include "shared/partials/csrf_input.html" %}
+        <button type="submit" class="btn btn-ghost btn-xs">Log out</button>
+      </form>
     </div>
     <div class="mission-banner">
       <p class="mission-label">Mission</p>

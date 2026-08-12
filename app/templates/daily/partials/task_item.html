@@ -2,6 +2,7 @@
   <div class="task-row">
     <span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
     <form method="post" action="/daily/items/{{ task.id }}/complete" class="complete-form">
+      {% include "shared/partials/csrf_input.html" %}
       <input type="checkbox" class="task-complete-cb" onchange="this.form.submit()" aria-label="Mark complete">
     </form>
     <details class="task-details">
@@ -30,6 +31,7 @@
         {% endif %}
         {% if task.is_master %}
         <form method="post" action="/daily/items/{{ task.id }}/update" class="form-grid compact">
+          {% include "shared/partials/csrf_input.html" %}
           <label>Title<input type="text" name="title" value="{{ task.title }}" required></label>
           <label>Notes<textarea name="notes" rows="2">{{ task_notes.get(task.id, '') }}</textarea></label>
           <label>Type
@@ -48,10 +50,12 @@
         {% endif %}
         <div class="inline-actions remove-task-actions">
           <form method="post" action="/daily/items/{{ task.id }}/archive">
+            {% include "shared/partials/csrf_input.html" %}
             <button type="submit" class="btn btn-secondary btn-sm">Archive</button>
           </form>
           <form method="post" action="/daily/items/{{ task.id }}/delete" class="remove-task-form"
                 onsubmit="return confirmRemoveTask(this);">
+            {% include "shared/partials/csrf_input.html" %}
             {% if task.is_master or task.is_learning %}
             <label class="remove-source-option">
               <input type="checkbox" name="delete_source" value="1">

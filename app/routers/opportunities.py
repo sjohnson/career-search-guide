@@ -2,7 +2,6 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -41,9 +40,9 @@ from app.services.opportunities import (
     split_opportunities,
     touch_opportunity,
 )
+from app.templating import templates
 
 router = APIRouter(prefix="/opportunities", tags=["opportunities"])
-templates = Jinja2Templates(directory="app/templates")
 
 SORTABLE = list(SORT_FIELDS.keys())
 

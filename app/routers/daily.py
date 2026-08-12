@@ -2,7 +2,6 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -26,9 +25,9 @@ from app.services.daily_plan import (
     set_primary_note,
     uncomplete_plan_item,
 )
+from app.templating import templates
 
 router = APIRouter(tags=["daily"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 def _format_heading(plan_date: date) -> str:
