@@ -53,6 +53,18 @@ Open [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 Schema upgrades for an existing SQLite database run automatically on startup — no manual migration step.
 
+## Tests
+
+```bash
+source venv/bin/activate
+pip install -r requirements-dev.txt   # first time only
+pytest                                # run all tests
+pytest tests/test_opportunities.py    # one file
+pytest -k "pipeline"                  # name filter (like RSpec -e)
+```
+
+Tests live in `tests/` and cover core service logic (no server or database required).
+
 ## Import your Google Sheet
 
 1. Export as `.xlsx` from Google Sheets
