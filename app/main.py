@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import ALLOW_REGISTRATION, SECRET_KEY, SESSION_HTTPS_ONLY
-from app.database import Base, engine, SessionLocal
+from app.database import SessionLocal
 from app.config import DEFAULT_MISSION
 from app.middleware.auth import auth_middleware
 from app.middleware.csrf import csrf_middleware
@@ -17,7 +17,6 @@ from app.routers import auth, daily, import_data, learning_tasks, master_tasks, 
 from app.services.adzuna_settings import default_adzuna_settings
 from app.services.alembic_runner import run_alembic_upgrade
 from app.services.auth import user_count
-from app.services.schema_migration import run_schema_migration
 
 logger = logging.getLogger(__name__)
 
@@ -54,13 +53,7 @@ app.include_router(settings.router)
 
 @app.on_event("startup")
 def startup() -> None:
-    db = SessionLocal()
-    try:
-        run_schema_migration(db)
-    finally:
-        db.close()
     run_alembic_upgrade()
-    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         if not db.query(Settings).first():

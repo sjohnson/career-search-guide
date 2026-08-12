@@ -57,7 +57,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
-On first launch, the app creates `data/career_search.db` automatically. Schema upgrades for an existing SQLite database also run on startup — no manual migration step.
+On first launch, the app creates `data/career_search.db` and applies the schema via Alembic on startup (`alembic upgrade head`). Schema changes belong in `alembic/versions/`; run `alembic upgrade head` manually if you use CLI-only workflows without starting the web app. Use `alembic check` during development to catch model/migration drift.
 
 **First account:** if no users exist yet, visit `/register` to create one. Otherwise log in at `/login`, or create an account from the CLI:
 

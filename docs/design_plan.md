@@ -176,7 +176,7 @@ Each page template sets `{% block page_class %}` on the shared `<main>` in `base
 - **Authorization:** deferred — login gates the app; task/opportunity rows are not yet scoped by `user_id`.
 - **CSRF:** session-stored token on mutating requests (form field or `X-CSRF-Token` header for HTMX).
 - **CORS:** intentionally omitted — same-origin server-rendered HTML app; add `CORSMiddleware` only if a separate SPA/API client is introduced.
-- **SQL:** application routes use SQLAlchemy ORM; raw SQL is limited to legacy startup migrations in `schema_migration.py` (internal table/column names only).
+- **SQL:** application routes use SQLAlchemy ORM; schema changes belong in Alembic migrations under `alembic/versions/`.
 
 ## Context management
 
@@ -191,7 +191,7 @@ source venv/bin/activate
 uvicorn app.main:app --reload
 ```
 
-Schema upgrades run automatically on startup: legacy data migrations in `app.services.schema_migration`, then Alembic (`alembic upgrade head` via `app.services.alembic_runner`). New schema changes belong in numbered files under `alembic/versions/`.
+Schema upgrades run automatically on startup via Alembic (`alembic upgrade head` through `app.services.alembic_runner`). New schema changes belong in numbered files under `alembic/versions/`. Models in `app/models.py` define the intended shape; keep migrations in sync with `alembic check`.
 
 ## Deploy notes (future)
 
