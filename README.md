@@ -51,7 +51,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
-Schema upgrades for an existing SQLite database run automatically on startup — no manual migration step.
+On first launch, the app creates `data/career_search.db` automatically. Schema upgrades for an existing SQLite database also run on startup — no manual migration step.
 
 ## Tests
 
