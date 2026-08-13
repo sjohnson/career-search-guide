@@ -4,15 +4,15 @@ import warnings
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import ALLOW_REGISTRATION, SECRET_KEY, SESSION_HTTPS_ONLY
 from app.database import SessionLocal
 from app.config import DEFAULT_MISSION
+from app.deps.csrf import verify_csrf
 from app.middleware.auth import auth_middleware
-from app.middleware.csrf import csrf_middleware
 from app.models import AdzunaSettings, Settings
 from app.routers import auth, daily, import_data, learning_tasks, master_tasks, opportunities, settings
 from app.services.adzuna_settings import default_adzuna_settings
@@ -31,7 +31,6 @@ if not _effective_secret_key:
     )
 
 app = FastAPI(title="Career Search Guide")
-app.middleware("http")(csrf_middleware)
 app.middleware("http")(auth_middleware)
 app.add_middleware(
     SessionMiddleware,
@@ -44,12 +43,15 @@ static_dir = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 app.include_router(auth.router)
-app.include_router(daily.router)
-app.include_router(master_tasks.router)
-app.include_router(learning_tasks.router)
-app.include_router(opportunities.router)
-app.include_router(import_data.router)
-app.include_router(settings.router)
+# CSRF is enforced on all mutating routes via the verify_csrf dependency (it
+# no-ops for safe methods). Auth handles its own token validation inline.
+_csrf = [Depends(verify_csrf)]
+app.include_router(daily.router, dependencies=_csrf)
+app.include_router(master_tasks.router, dependencies=_csrf)
+app.include_router(learning_tasks.router, dependencies=_csrf)
+app.include_router(opportunities.router, dependencies=_csrf)
+app.include_router(import_data.router, dependencies=_csrf)
+app.include_router(settings.router, dependencies=_csrf)
 
 
 @app.on_event("startup")

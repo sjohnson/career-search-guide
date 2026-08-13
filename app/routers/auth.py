@@ -13,6 +13,7 @@ from app.services.auth import (
     create_user,
     registration_allowed,
 )
+from app.deps.csrf import verify_csrf
 from app.services.csrf import ensure_csrf_token, validate_csrf_token
 from app.templating import templates
 
@@ -117,7 +118,7 @@ async def register_submit(
     return RedirectResponse(url="/", status_code=303)
 
 
-@router.post("/logout")
+@router.post("/logout", dependencies=[Depends(verify_csrf)])
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/login", status_code=303)
