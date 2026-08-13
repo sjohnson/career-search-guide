@@ -77,7 +77,9 @@ pytest tests/test_opportunities.py    # one file
 pytest -k "pipeline"                  # name filter (like RSpec -e)
 ```
 
-Tests live in `tests/` and cover core service logic plus auth/security behavior.
+Tests live in `tests/` and cover core service logic plus auth/security behavior. Pytest uses an isolated SQLite file at `data/test.db` (gitignored with `data/`); your dev database at `data/career_search.db` is never touched. Schema is applied via Alembic once per test session; table data is cleared after each test.
+
+Optional: override the database file for CLI workflows with `DATABASE_URL` in `.env` (see `.env.example`).
 
 ## Import your Google Sheet
 

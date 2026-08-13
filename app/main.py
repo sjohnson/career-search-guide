@@ -1,4 +1,5 @@
 import logging
+import os
 import warnings
 
 from pathlib import Path
@@ -53,7 +54,8 @@ app.include_router(settings.router)
 
 @app.on_event("startup")
 def startup() -> None:
-    run_alembic_upgrade()
+    if not os.getenv("TESTING"):
+        run_alembic_upgrade()
     db = SessionLocal()
     try:
         if not db.query(Settings).first():

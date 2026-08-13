@@ -4,7 +4,6 @@ from app.database import SessionLocal
 from app.services.auth import (
     authenticate_user,
     create_user,
-    get_user_by_email,
     registration_allowed,
     validate_password,
 )
@@ -19,11 +18,6 @@ class TestAuthService:
         db = SessionLocal()
         email = "unit-auth-service@example.com"
         try:
-            existing = get_user_by_email(db, email)
-            if existing:
-                db.delete(existing)
-                db.commit()
-
             user = create_user(db, email, "password123")
             assert user.id is not None
 
@@ -38,8 +32,7 @@ class TestAuthService:
     def test_registration_allowed_when_empty_or_flag_set(self):
         db = SessionLocal()
         try:
-            if db.query(__import__("app.models", fromlist=["User"]).User).count() == 0:
-                assert registration_allowed(db, allow_registration=False)
+            assert registration_allowed(db, allow_registration=False)
             assert registration_allowed(db, allow_registration=True)
         finally:
             db.close()
@@ -84,10 +77,7 @@ class TestAuthRoutes:
     def test_register_blocked_when_users_exist_and_flag_off(self, client):
         db = SessionLocal()
         try:
-            from app.models import User
-
-            if db.query(User).count() == 0:
-                create_user(db, "bootstrap-user@example.com", "password123")
+            create_user(db, "bootstrap-user@example.com", "password123")
         finally:
             db.close()
 
