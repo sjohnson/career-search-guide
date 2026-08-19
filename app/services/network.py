@@ -1,5 +1,6 @@
 import re
 from datetime import date
+from urllib.parse import urlparse
 
 from sqlalchemy import case
 from sqlalchemy.orm import Query
@@ -45,6 +46,14 @@ def sort_network_contacts(query: Query) -> Query:
     )
 
 
+def _link_label(url: str) -> str:
+    try:
+        host = (urlparse(url).netloc or "").removeprefix("www.")
+    except ValueError:
+        return url
+    return host or url
+
+
 def opportunity_link_parts(raw: str | None) -> list[dict]:
     if not raw or not raw.strip():
         return []
@@ -52,5 +61,12 @@ def opportunity_link_parts(raw: str | None) -> list[dict]:
     for token in _SPLIT_RE.split(raw.strip()):
         if not token:
             continue
-        parts.append({"text": token, "is_url": bool(_URL_RE.match(token))})
+        is_url = bool(_URL_RE.match(token))
+        parts.append(
+            {
+                "text": token,
+                "label": _link_label(token) if is_url else token,
+                "is_url": is_url,
+            }
+        )
     return parts

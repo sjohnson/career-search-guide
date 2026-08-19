@@ -1,19 +1,25 @@
 <tr class="network-row" id="network-row-{{ contact.id }}">
   <td><strong>{{ contact.name }}</strong></td>
   <td class="connection-cell">{{ contact.connection or '—' }}</td>
-  <td>{% if contact.first_contact_at %}{{ contact.first_contact_at.strftime('%Y-%m-%d') }}{% else %}—{% endif %}</td>
-  <td>{% if contact.followup_contact_at %}{{ contact.followup_contact_at.strftime('%Y-%m-%d') }}{% else %}—{% endif %}</td>
+  <td class="network-date-col">{% if contact.first_contact_at %}{{ contact.first_contact_at.strftime('%Y-%m-%d') }}{% else %}—{% endif %}</td>
+  <td class="network-date-col">{% if contact.followup_contact_at %}{{ contact.followup_contact_at.strftime('%Y-%m-%d') }}{% else %}—{% endif %}</td>
   <td>{{ method_labels.get(contact.method, contact.method or '—') }}</td>
   <td class="opportunities-cell">
     {% set parts = opportunity_links.get(contact.id, []) %}
     {% if parts %}
+    <div class="opportunity-links">
       {% for part in parts %}
-        {% if part.is_url %}<a href="{{ part.text }}" target="_blank" rel="noopener">{{ part.text }}</a>{% else %}{{ part.text }}{% endif %}{% if not loop.last %}, {% endif %}
+        {% if part.is_url %}
+        <a href="{{ part.text }}" title="{{ part.text }}" target="_blank" rel="noopener">{{ part.label }}</a>
+        {% else %}
+        <span>{{ part.text }}</span>
+        {% endif %}
       {% endfor %}
+    </div>
     {% else %}—{% endif %}
   </td>
   <td class="notes-cell notes-truncate" tabindex="0" role="button" title="Click to expand notes">{{ notes.get(contact.id, '') or '—' }}</td>
-  <td class="actions actions-col">
+  <td class="actions-col">
     <div class="action-stack">
       <a href="/network/{{ contact.id }}/edit" class="action-icon-btn action-edit" title="Edit" aria-label="Edit">&#9998;</a>
       <form method="post" action="/network/{{ contact.id }}/delete" class="inline-form" onsubmit="return confirm('Permanently delete?');">

@@ -958,9 +958,56 @@ body {
   max-width: none;
 }
 
+.table-scroll.network-scroll {
+  overflow-x: hidden;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  background: var(--surface);
+}
+
+.network-table.data-table {
+  table-layout: fixed;
+  width: 100%;
+  overflow: visible;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.network-table.data-table th,
+.network-table.data-table td {
+  vertical-align: middle;
+}
+
+.network-table.data-table td.actions-col {
+  display: table-cell;
+  vertical-align: middle;
+}
+
+.network-table col.col-network-date {
+  width: 7.25rem;
+}
+
+.network-table .network-date-col {
+  white-space: nowrap;
+}
+
 .network-table .connection-cell,
 .network-table .opportunities-cell {
+  overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.network-table .opportunity-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: flex-start;
+}
+
+.network-table .opportunity-links a {
+  overflow-wrap: anywhere;
 }
 
 .table-pagination {

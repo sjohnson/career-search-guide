@@ -9,14 +9,24 @@
 </div>
 
 {% if contacts %}
-<div class="table-scroll">
+<div class="table-scroll network-scroll">
 <table class="data-table compact network-table">
+  <colgroup>
+    <col style="width: 12%">
+    <col style="width: 20%">
+    <col class="col-network-date">
+    <col class="col-network-date">
+    <col style="width: 6.5rem">
+    <col style="width: 16%">
+    <col style="width: 22%">
+    <col style="width: 2.25rem">
+  </colgroup>
   <thead>
     <tr>
       <th>Name</th>
       <th>Connection</th>
-      <th>First Contact Date</th>
-      <th>Followup Contact Date</th>
+      <th class="network-date-col">First contact</th>
+      <th class="network-date-col">Follow-up</th>
       <th>Method</th>
       <th>Opportunities</th>
       <th>Note</th>

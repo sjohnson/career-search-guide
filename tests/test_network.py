@@ -58,6 +58,8 @@ class TestNetworkService:
         )
         assert [part["is_url"] for part in parts] == [True, False, True]
         assert parts[0]["text"] == "https://example.com/job"
+        assert parts[0]["label"] == "example.com"
+        assert parts[2]["label"] == "jobs.example.com"
 
     def test_sort_followup_nulls_last(self):
         db = SessionLocal()
@@ -124,6 +126,7 @@ class TestNetworkRoutes:
         assert "2026-08-20" in html
         assert "LinkedIn" in html
         assert 'href="https://example.com/job"' in html
+        assert ">example.com</a>" in html
         assert "other-text" in html
         assert "Ask about the compiler role" in html
 
