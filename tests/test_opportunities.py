@@ -233,3 +233,45 @@ class TestPipelineStageSwapHtml:
         assert f'id="pipeline-{opp_id}"' in html
         assert 'hx-swap-oob="true"' in html
         assert "<tbody" not in html
+
+    def test_section_change_wraps_oob_in_templates(self, client):
+        _login(client)
+        follow_id = _create_opp("Template Wrap Co", PipelineStage.APPLIED.value)
+        token = csrf_from_html(client.get("/opportunities").text)
+
+        response = client.patch(
+            f"/opportunities/{follow_id}/pipeline-stage",
+            data={"pipeline_stage": PipelineStage.NEW.value, "csrf_token": token},
+        )
+        assert response.status_code == 200, response.text
+        html = response.text
+        assert html.count("<template>") >= 4
+        assert re.search(
+            r'<div id="archived-section"[^>]*hx-swap-oob="true"',
+            html,
+        )
+        assert not re.search(r"<details[^>]*id=\"archived-section\"", html)
+
+    def test_archive_stage_oob_targets_wrapper(self, client):
+        _login(client)
+        follow_id = _create_opp("Archive From Follow Up", PipelineStage.APPLIED.value)
+        token = csrf_from_html(client.get("/opportunities").text)
+
+        response = client.patch(
+            f"/opportunities/{follow_id}/pipeline-stage",
+            data={"pipeline_stage": PipelineStage.PASSED.value, "csrf_token": token},
+        )
+        assert response.status_code == 200, response.text
+        html = response.text
+        assert re.search(
+            r'<div id="archived-section"[^>]*hx-swap-oob="true"',
+            html,
+        )
+        assert "Archived opportunities (1)" in html
+        assert "<template>" in html
+
+    def test_list_archived_wrapper_is_a_div(self, client):
+        _login(client)
+        html = client.get("/opportunities").text
+        assert re.search(r'<div id="archived-section">', html)
+        assert "<details class=\"archived-section card\">" in html

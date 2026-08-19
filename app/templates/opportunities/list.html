@@ -62,40 +62,9 @@
 
 {% include "opportunities/partials/adzuna_panel.html" %}
 
-<details id="archived-section" class="archived-section card">
-  <summary>Archived opportunities ({{ archived_opportunities|length }})</summary>
-  {% if archived_opportunities %}
-  <div class="table-scroll">
-  <table class="data-table opportunities-table compact archived-table">
-    <thead>
-      <tr>
-        <th>Rank</th>
-        <th>Company</th>
-        <th>Remote</th>
-        <th>Source</th>
-        <th>Stack</th>
-        <th>Mission Fit</th>
-        <th>Salary</th>
-        <th>Pipeline</th>
-        <th>Connections</th>
-        <th>Referred By</th>
-        <th>Location</th>
-        <th>Applied</th>
-        <th>Notes</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for opp in archived_opportunities %}
-      {% with archived=true, row_variant='archived' %}{% include "opportunities/partials/row.html" %}{% endwith %}
-      {% endfor %}
-    </tbody>
-  </table>
-  </div>
-  {% else %}
-  <p class="empty-state">No archived opportunities.</p>
-  {% endif %}
-</details>
+<div id="archived-section">
+  {% include "opportunities/partials/archived_section.html" %}
+</div>
 
 <div id="opportunity-modal-container"></div>
 {% endblock %}
