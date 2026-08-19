@@ -14,7 +14,7 @@ from app.config import DEFAULT_MISSION
 from app.deps.csrf import verify_csrf
 from app.middleware.auth import auth_middleware
 from app.models import AdzunaSettings, Settings
-from app.routers import auth, daily, import_data, learning_tasks, master_tasks, opportunities, settings
+from app.routers import auth, daily, import_data, learning_tasks, master_tasks, network, opportunities, settings
 from app.services.adzuna_settings import default_adzuna_settings
 from app.services.alembic_runner import run_alembic_upgrade
 from app.services.auth import user_count
@@ -50,6 +50,7 @@ app.include_router(daily.router, dependencies=_csrf)
 app.include_router(master_tasks.router, dependencies=_csrf)
 app.include_router(learning_tasks.router, dependencies=_csrf)
 app.include_router(opportunities.router, dependencies=_csrf)
+app.include_router(network.router, dependencies=_csrf)
 app.include_router(import_data.router, dependencies=_csrf)
 app.include_router(settings.router, dependencies=_csrf)
 

@@ -1,25 +1,3 @@
-document.addEventListener('click', function (event) {
-  var cell = event.target.closest('.notes-truncate');
-  if (!cell) return;
-  var row = cell.closest('.opp-row');
-  if (row) {
-    row.classList.toggle('notes-expanded');
-    cell.classList.toggle('notes-truncate');
-  }
-});
-
-document.addEventListener('keydown', function (event) {
-  if (event.key !== 'Enter' && event.key !== ' ') return;
-  var cell = event.target.closest('.notes-truncate');
-  if (!cell) return;
-  event.preventDefault();
-  var row = cell.closest('.opp-row');
-  if (row) {
-    row.classList.toggle('notes-expanded');
-    cell.classList.toggle('notes-truncate');
-  }
-});
-
 function openAppDialog(dialog) {
   if (!dialog || typeof dialog.showModal !== 'function') return;
   if (dialog.open) {

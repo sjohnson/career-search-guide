@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block page_class %}network{% endblock %}
+{% block title %}Network — Career Search Guide{% endblock %}
+
+{% block content %}
+<div class="page-header row-header">
+  <h1>Network</h1>
+  <a href="/network/new" class="btn btn-primary">New contact</a>
+</div>
+
+{% if contacts %}
+<div class="table-scroll">
+<table class="data-table compact network-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Connection</th>
+      <th>First Contact Date</th>
+      <th>Followup Contact Date</th>
+      <th>Method</th>
+      <th>Opportunities</th>
+      <th>Note</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for contact in contacts %}
+    {% include "network/partials/row.html" %}
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<div class="empty-state card">
+  <p>No network contacts yet.</p>
+  <a href="/network/new" class="btn btn-primary">Add contact</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/notes.js"></script>
+{% endblock %}

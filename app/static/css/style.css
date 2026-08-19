@@ -123,6 +123,10 @@ body {
   max-width: 1800px;
 }
 
+.container.network {
+  max-width: 1400px;
+}
+
 .page-header {
   display: flex;
   align-items: center;
@@ -928,15 +932,18 @@ body {
   background: #fdecea;
 }
 
-.opportunities-table.compact .opp-row {
+.opportunities-table.compact .opp-row,
+.network-table.compact .network-row {
   max-height: 2.75rem;
 }
 
-.opportunities-table.compact .opp-row.notes-expanded {
+.opportunities-table.compact .opp-row.notes-expanded,
+.network-table.compact .network-row.notes-expanded {
   max-height: none;
 }
 
-.opportunities-table.compact .notes-truncate {
+.opportunities-table.compact .notes-truncate,
+.network-table.compact .notes-truncate {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -944,10 +951,16 @@ body {
   max-width: none;
 }
 
-.opportunities-table.compact .opp-row.notes-expanded .notes-cell {
+.opportunities-table.compact .opp-row.notes-expanded .notes-cell,
+.network-table.compact .network-row.notes-expanded .notes-cell {
   white-space: pre-wrap;
   overflow: visible;
   max-width: none;
+}
+
+.network-table .connection-cell,
+.network-table .opportunities-cell {
+  word-break: break-word;
 }
 
 .table-pagination {
@@ -986,6 +999,10 @@ body {
 .follow-up-table.compact td {
   padding: 0.4rem 0.5rem;
   vertical-align: middle;
+}
+
+.follow-up-table .empty-follow-up-row .empty-state {
+  padding: 1rem 0.5rem;
 }
 
 .adzuna-panel-header {

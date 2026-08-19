@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block page_class %}network{% endblock %}
+{% block title %}{% if contact %}Edit{% else %}New{% endif %} Contact{% endblock %}
+
+{% block content %}
+<div class="page-header"><h1>{% if contact %}Edit{% else %}New{% endif %} Contact</h1></div>
+<form method="post" action="{% if contact %}/network/{{ contact.id }}{% else %}/network{% endif %}" class="card form-grid wide">
+  {% include "shared/partials/csrf_input.html" %}
+  <label>Name<input type="text" name="name" maxlength="60" value="{{ contact.name if contact else '' }}" required></label>
+  <label>Method
+    <select name="method">
+      <option value="">—</option>
+      {% for method in contact_methods %}
+      <option value="{{ method.value }}" {% if contact and contact.method == method.value %}selected{% endif %}>{{ method_labels[method.value] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>First contact date<input type="date" name="first_contact_at" value="{{ contact.first_contact_at.isoformat() if contact and contact.first_contact_at else '' }}"></label>
+  <label>Followup contact date<input type="date" name="followup_contact_at" value="{{ contact.followup_contact_at.isoformat() if contact and contact.followup_contact_at else '' }}"></label>
+  <label class="full-width">Connection<input type="text" name="connection" maxlength="300" value="{{ contact.connection if contact and contact.connection else '' }}" placeholder="Where you know them from, plus LinkedIn URL if you have one"></label>
+  <label class="full-width">Opportunities<input type="text" name="opportunities" maxlength="300" value="{{ contact.opportunities if contact and contact.opportunities else '' }}" placeholder="Job posting URLs, separated by commas or spaces"></label>
+  <label class="full-width">Notes<textarea name="notes" rows="4">{{ notes_text }}</textarea></label>
+  <div class="inline-actions full-width">
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="/network" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+{% endblock %}

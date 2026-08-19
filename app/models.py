@@ -33,6 +33,7 @@ class NoteableType(str, Enum):
     MASTER_TASK = "master_task"
     LEARNING_TASK = "learning_task"
     OPPORTUNITY = "opportunity"
+    NETWORK_CONTACT = "network_contact"
 
 
 NOTEABLE_TYPES = {item.value for item in NoteableType}
@@ -294,6 +295,27 @@ PIPELINE_STAGE_LABELS = {
 }
 
 
+class ContactMethod(str, Enum):
+    EMAIL = "email"
+    TEXT = "text"
+    LINKEDIN = "linkedin"
+    PHONE = "phone"
+    IN_PERSON = "in_person"
+    VIDEO = "video"
+    OTHER = "other"
+
+
+CONTACT_METHOD_LABELS = {
+    ContactMethod.EMAIL.value: "Email",
+    ContactMethod.TEXT.value: "Text",
+    ContactMethod.LINKEDIN.value: "LinkedIn",
+    ContactMethod.PHONE.value: "Phone",
+    ContactMethod.IN_PERSON.value: "In person",
+    ContactMethod.VIDEO.value: "Video",
+    ContactMethod.OTHER.value: "Other",
+}
+
+
 class Opportunity(Base):
     __tablename__ = "opportunities"
 
@@ -350,6 +372,22 @@ class Opportunity(Base):
         if self.highlight_rank == 3:
             return "highlight-bronze"
         return ""
+
+
+class NetworkContact(Base):
+    __tablename__ = "network_contacts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(60), nullable=False)
+    connection: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    first_contact_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    followup_contact_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    method: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    opportunities: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
 
 class Note(Base):

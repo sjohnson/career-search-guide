@@ -15,6 +15,7 @@ TABLES_TO_TRUNCATE = [
     "daily_plan_dismissals",
     "notes",
     "opportunities",
+    "network_contacts",
     "master_tasks",
     "learning_tasks",
     "daily_plans",
