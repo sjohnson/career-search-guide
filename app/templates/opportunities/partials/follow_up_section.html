@@ -5,7 +5,6 @@
     <p class="meta">{{ follow_up_total }} active — oldest updated first</p>
     {% endif %}
   </div>
-  {% if follow_up_total > 0 %}
   <div class="table-scroll">
     <table class="data-table opportunities-table compact follow-up-table">
       <colgroup>
@@ -37,7 +36,4 @@
       </tbody>
     </table>
   </div>
-  {% else %}
-  <p class="empty-state subtle">No opportunities in follow-up yet. Change status from New to Applied to track here.</p>
-  {% endif %}
 </section>

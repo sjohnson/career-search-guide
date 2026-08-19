@@ -1,3 +1,9 @@
+{% if follow_up_opportunities %}
 {% for opp in follow_up_opportunities %}
 {% include "opportunities/partials/follow_up_row.html" %}
 {% endfor %}
+{% else %}
+<tr class="empty-follow-up-row">
+  <td colspan="9" class="empty-state subtle">No opportunities in follow-up yet. Change status from New to Applied to track here.</td>
+</tr>
+{% endif %}
