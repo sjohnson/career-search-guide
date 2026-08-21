@@ -63,6 +63,21 @@ class TestMasterTaskRoutes:
         finally:
             db.close()
 
+    def test_list_row_forms_carry_a_csrf_token(self, client):
+        # Regression: archive/delete forms render inside the task_row macro,
+        # which only sees csrf_token when imported `with context`. Without it the
+        # hidden field renders value="" and the POST fails CSRF validation.
+        _login(client)
+        token = csrf_from_html(client.get("/master-tasks/new").text)
+        client.post(
+            "/master-tasks",
+            data={"task": "Row task", "date_kind": "goal", "csrf_token": token},
+            follow_redirects=False,
+        )
+
+        html = client.get("/master-tasks").text
+        assert 'name="csrf_token" value=""' not in html
+
     def test_create_master_task_rejects_missing_csrf(self, client):
         _login(client)
 
