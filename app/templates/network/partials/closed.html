@@ -1,0 +1,59 @@
+{# Closed: finished threads. Deliberately light — just enough to recognise
+   someone and re-open the thread in one click. #}
+<section class="network-section closed-section">
+  <details class="archived-section card" {% if not closed %}data-empty="true"{% endif %}>
+    <summary>
+      <h2>Closed threads{% if closed %} <span class="section-count">{{ closed | length }}</span>{% endif %}</h2>
+    </summary>
+
+    {% if closed %}
+    <div class="table-scroll network-scroll">
+    <table class="data-table compact network-table">
+      <colgroup>
+        <col style="width: 20%">
+        <col style="width: 22%">
+        <col style="width: 8.5rem">
+        <col>
+        <col style="width: 11rem">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>How I know them</th>
+          <th class="network-date-col">Last contact</th>
+          <th>Note</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for contact in closed %}
+        <tr class="network-row" id="network-closed-row-{{ contact.id }}">
+          <td>
+            <strong>{{ contact.name }}</strong>
+            {% if contact.linkedin_url %}
+            <a href="{{ contact.linkedin_url }}" target="_blank" rel="noopener" title="LinkedIn profile">&#8599;</a>
+            {% endif %}
+          </td>
+          <td class="connection-cell">{{ contact.affiliation or '—' }}</td>
+          <td class="network-date-col">
+            {%- if contact.last_contact_at %}{{ contact.last_contact_at.strftime('%Y-%m-%d') }}{% else %}—{% endif -%}
+          </td>
+          <td class="notes-cell notes-truncate" tabindex="0" role="button" title="Click to expand notes">{{ notes.get(contact.id, '') or '—' }}</td>
+          <td class="actions-col">
+            <div class="inline-actions tight">
+              <button type="button" class="btn btn-sm btn-ghost"
+                      hx-post="/network/{{ contact.id }}/reopen" hx-swap="none"
+                      title="Re-open this thread and add them back to Reach out">Reach out again</button>
+              <a href="/network/{{ contact.id }}/edit" class="action-icon-btn action-edit" title="Edit" aria-label="Edit">&#9998;</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="section-empty">No closed threads yet.</p>
+    {% endif %}
+  </details>
+</section>

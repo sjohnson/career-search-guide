@@ -1,0 +1,59 @@
+{# A single person in the Reach out panel. Rolodex-style: identity and urgency
+   on the first line, supporting detail beneath, actions last. #}
+<article class="contact-card{% if contact.days_overdue > 0 %} is-overdue{% endif %}" id="network-card-{{ contact.id }}">
+  <div class="contact-card-head">
+    <strong class="contact-name">{{ contact.name }}</strong>
+    <span class="overdue-badge{% if contact.is_never_contacted %} is-new{% elif contact.days_overdue > 0 %} is-overdue{% endif %}">
+      {{ contact.overdue_label }}
+    </span>
+  </div>
+
+  <div class="contact-card-meta">
+    {% if contact.affiliation %}<span class="meta-item">{{ contact.affiliation }}</span>{% endif %}
+    {% if contact.linkedin_url %}
+    <a class="meta-item meta-link" href="{{ contact.linkedin_url }}" target="_blank" rel="noopener">LinkedIn &#8599;</a>
+    {% endif %}
+    {% if contact.opportunity %}
+    <a class="meta-item meta-link" href="/opportunities">{{ contact.opportunity.company }}</a>
+    {% endif %}
+    {% if contact.last_contact_at %}
+    <span class="meta-item meta-quiet">
+      last: {{ contact.last_contact_at.strftime('%b %-d') }}{% if contact.last_contact_method %} &middot; {{ method_labels.get(contact.last_contact_method, contact.last_contact_method) }}{% endif %}
+    </span>
+    {% endif %}
+  </div>
+
+  {% set note = notes.get(contact.id, '') %}
+  {% if note %}<p class="contact-card-note">{{ note }}</p>{% endif %}
+
+  <div class="contact-card-actions">
+    <form class="inline-form log-contact-form" hx-post="/network/{{ contact.id }}/log-contact" hx-swap="none">
+      <select name="method" class="micro-select" aria-label="Contact method">
+        {% for method in contact_methods %}
+        <option value="{{ method.value }}" {% if contact.last_contact_method == method.value %}selected{% endif %}>{{ method_labels[method.value] }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-sm btn-primary">Log contact</button>
+    </form>
+
+    <button type="button" class="btn btn-sm btn-ghost"
+            hx-post="/network/{{ contact.id }}/snooze" hx-swap="none"
+            title="Push the next touch out a week without logging contact">Snooze 1w</button>
+
+    {# One click, no confirmation: the Closed section's "Reach out again"
+       button is the undo, so this is safely reversible. #}
+    <button type="button" class="btn btn-sm btn-ghost"
+            hx-post="/network/{{ contact.id }}/close" hx-swap="none"
+            title="No further contact needed">No further contact</button>
+
+    <select class="micro-select cadence-select" aria-label="Follow-up cadence"
+            hx-post="/network/{{ contact.id }}/cadence" hx-swap="none"
+            name="cadence_days" hx-trigger="change">
+      {% for days in cadence_choices %}
+      <option value="{{ days }}" {% if contact.cadence_days == days %}selected{% endif %}>{{ cadence_labels[days] }}</option>
+      {% endfor %}
+    </select>
+
+    <a href="/network/{{ contact.id }}/edit" class="action-icon-btn action-edit" title="Edit" aria-label="Edit">&#9998;</a>
+  </div>
+</article>

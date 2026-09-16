@@ -7,18 +7,44 @@
 <form method="post" action="{% if contact %}/network/{{ contact.id }}{% else %}/network{% endif %}" class="card form-grid wide">
   {% include "shared/partials/csrf_input.html" %}
   <label>Name<input type="text" name="name" maxlength="60" value="{{ contact.name if contact else '' }}" required></label>
-  <label>Method
-    <select name="method">
+  <label>How I know them<input type="text" name="affiliation" maxlength="120" value="{{ contact.affiliation if contact and contact.affiliation else '' }}" placeholder="Verisys, Family, Davis High…"></label>
+
+  <label>Last contact date<input type="date" name="last_contact_at" value="{{ contact.last_contact_at.isoformat() if contact and contact.last_contact_at else '' }}"></label>
+  <label>Last contact method
+    <select name="last_contact_method">
       <option value="">—</option>
       {% for method in contact_methods %}
-      <option value="{{ method.value }}" {% if contact and contact.method == method.value %}selected{% endif %}>{{ method_labels[method.value] }}</option>
+      <option value="{{ method.value }}" {% if contact and contact.last_contact_method == method.value %}selected{% endif %}>{{ method_labels[method.value] }}</option>
       {% endfor %}
     </select>
   </label>
-  <label>First contact date<input type="date" name="first_contact_at" value="{{ contact.first_contact_at.isoformat() if contact and contact.first_contact_at else '' }}"></label>
-  <label>Followup contact date<input type="date" name="followup_contact_at" value="{{ contact.followup_contact_at.isoformat() if contact and contact.followup_contact_at else '' }}"></label>
-  <label class="full-width">Connection<input type="text" name="connection" maxlength="300" value="{{ contact.connection if contact and contact.connection else '' }}" placeholder="Where you know them from, plus LinkedIn URL if you have one"></label>
-  <label class="full-width">Opportunities<input type="text" name="opportunities" maxlength="300" value="{{ contact.opportunities if contact and contact.opportunities else '' }}" placeholder="Job posting URLs, separated by commas or spaces"></label>
+
+  <label>Follow-up cadence
+    <select name="cadence_days">
+      {% for days in cadence_choices %}
+      <option value="{{ days }}" {% if contact and contact.cadence_days == days %}selected{% elif not contact and days == 14 %}selected{% endif %}>{{ cadence_labels[days] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Next touch override
+    <input type="date" name="next_touch_override" value="{{ contact.next_touch_override.isoformat() if contact and contact.next_touch_override else '' }}">
+    <small class="field-hint">Leave blank to use the cadence.</small>
+  </label>
+
+  <label>Opportunity
+    <select name="opportunity_id">
+      <option value="">— none —</option>
+      {% for opp in opportunities %}
+      <option value="{{ opp.id }}" {% if contact and contact.opportunity_id == opp.id %}selected{% endif %}>{{ opp.company }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>First contact date
+    <input type="date" name="first_contact_at" value="{{ contact.first_contact_at.isoformat() if contact and contact.first_contact_at else '' }}">
+    <small class="field-hint">When this thread started.</small>
+  </label>
+
+  <label class="full-width">LinkedIn URL<input type="url" name="linkedin_url" maxlength="500" value="{{ contact.linkedin_url if contact and contact.linkedin_url else '' }}" placeholder="https://www.linkedin.com/in/…"></label>
   <label class="full-width">Notes<textarea name="notes" rows="4">{{ notes_text }}</textarea></label>
   <div class="inline-actions full-width">
     <button type="submit" class="btn btn-primary">Save</button>

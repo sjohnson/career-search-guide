@@ -1,0 +1,12 @@
+{# Read-only nudge. Deliberately creates no tasks and nothing to check off:
+   wiring Network into task auto-assignment would drag in the dismissal and
+   recurring-completion logic, which is the most regression-prone part of the
+   app. This just points at the Network tab. #}
+<section class="reach-out-nudge card">
+  <h2>Reach out{% if reach_out_total %} &middot; {{ reach_out_total }} due{% endif %}</h2>
+  <p class="reach-out-nudge-names">
+    {% for contact in reach_out_due %}{{ contact.name }}{% if not loop.last %} &middot; {% endif %}{% endfor %}
+    {%- if reach_out_total > reach_out_due | length %} &middot; +{{ reach_out_total - (reach_out_due | length) }} more{% endif %}
+  </p>
+  <a href="/network" class="reach-out-nudge-link">Open Network &#8594;</a>
+</section>

@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from enum import Enum
 
 from sqlalchemy import (
@@ -12,6 +12,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -317,6 +318,23 @@ CONTACT_METHOD_LABELS = {
 }
 
 
+class ContactStatus(str, Enum):
+    ACTIVE = "active"
+    CLOSED = "closed"
+
+
+DEFAULT_CADENCE_DAYS = 14
+
+CADENCE_CHOICES = [7, 14, 30, 90]
+
+CADENCE_LABELS = {
+    7: "Weekly",
+    14: "Every 2 weeks",
+    30: "Monthly",
+    90: "Quarterly",
+}
+
+
 class Opportunity(Base):
     __tablename__ = "opportunities"
 
@@ -376,19 +394,83 @@ class Opportunity(Base):
 
 
 class NetworkContact(Base):
+    """A person in the job-search network.
+
+    One row per person, not per contact event. The follow-up date is derived
+    (`next_touch_at`) rather than entered by hand — see `docs/PLANNING.md`.
+    """
+
     __tablename__ = "network_contacts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(60), nullable=False)
-    connection: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    affiliation: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    linkedin_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    opportunity_id: Mapped[int | None] = mapped_column(
+        ForeignKey("opportunities.id", ondelete="SET NULL"), nullable=True
+    )
     first_contact_at: Mapped[date | None] = mapped_column(Date, nullable=True)
-    followup_contact_at: Mapped[date | None] = mapped_column(Date, nullable=True)
-    method: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    opportunities: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    last_contact_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    last_contact_method: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    cadence_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=DEFAULT_CADENCE_DAYS, server_default=text("14")
+    )
+    next_touch_override: Mapped[date | None] = mapped_column(Date, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default=ContactStatus.ACTIVE.value, server_default="active"
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, onupdate=utcnow
     )
+
+    opportunity: Mapped["Opportunity | None"] = relationship("Opportunity", lazy="joined")
+
+    @property
+    def next_touch_at(self) -> date:
+        """When this person is next due for contact.
+
+        An explicit override wins; otherwise it is the last contact plus the
+        cadence. Someone never contacted falls back to the day they were added,
+        so they are due immediately and sort alongside overdue follow-ups
+        without needing a special case.
+        """
+        if self.next_touch_override:
+            return self.next_touch_override
+        if self.last_contact_at:
+            return self.last_contact_at + timedelta(days=self.cadence_days or DEFAULT_CADENCE_DAYS)
+        return (self.created_at or utcnow()).date()
+
+    @property
+    def days_overdue(self) -> int:
+        """Positive when overdue, 0 on the due day, negative when still quiet."""
+        return (date.today() - self.next_touch_at).days
+
+    @property
+    def is_active(self) -> bool:
+        """`status` is a Python-side column default applied at INSERT, so a
+        freshly constructed contact still has None here. Treat that as active
+        rather than silently reporting a new person as not due."""
+        return (self.status or ContactStatus.ACTIVE.value) == ContactStatus.ACTIVE.value
+
+    @property
+    def is_due(self) -> bool:
+        return self.is_active and self.days_overdue >= 0
+
+    @property
+    def is_never_contacted(self) -> bool:
+        return self.last_contact_at is None
+
+    @property
+    def overdue_label(self) -> str:
+        days = self.days_overdue
+        if self.is_never_contacted:
+            return "not yet contacted"
+        if days > 0:
+            return f"{days}d overdue"
+        if days == 0:
+            return "due today"
+        return f"in {-days}d"
 
 
 class Note(Base):

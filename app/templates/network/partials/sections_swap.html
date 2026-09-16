@@ -1,0 +1,14 @@
+{# Every network mutation can move a person between any two sections — logging
+   a contact moves Reach out → Scheduled, closing moves either into Closed,
+   re-opening moves Closed → Reach out. Rather than reason about which pair is
+   affected, repaint all three out-of-band. The ids here must match the
+   wrappers in network/list.html. #}
+<div id="network-reach-out" hx-swap-oob="true">
+  {% include "network/partials/reach_out.html" %}
+</div>
+<div id="network-scheduled" hx-swap-oob="true">
+  {% include "network/partials/scheduled.html" %}
+</div>
+<div id="network-closed" hx-swap-oob="true">
+  {% include "network/partials/closed.html" %}
+</div>

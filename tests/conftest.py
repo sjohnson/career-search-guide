@@ -50,11 +50,20 @@ def clean_database():
     yield
     db = SessionLocal()
     try:
+        # Truncation ignores foreign keys so tables can be cleared in any
+        # order. The pragma MUST be restored afterwards: it is connection
+        # scoped, the connection goes back into the pool, and the
+        # "connect"-time listener in app.database only fires for brand new
+        # connections — so leaving it off silently disables every ondelete
+        # rule for the rest of the run.
         db.execute(text("PRAGMA foreign_keys=OFF"))
         for table in TABLES_TO_TRUNCATE:
             db.execute(text(f"DELETE FROM {table}"))
         db.commit()
     finally:
+        # Outside any transaction — SQLite treats this pragma as a no-op
+        # while one is open.
+        db.execute(text("PRAGMA foreign_keys=ON"))
         db.close()
 
 

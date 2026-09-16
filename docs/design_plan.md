@@ -93,6 +93,16 @@ We chose **separate `master_tasks` and `learning_tasks` tables plus a thin `dail
 - notes via polymorphic `notes` table
 - List: sortable columns (server-side), sort toolbar above New table, archived collapsed section, medal highlight buttons
 
+### `network_contacts`
+- One row per **person**, not per contact event.
+- Identity: `name`, `affiliation` ("How I know them" — e.g. Verisys, Family, Davis High), `linkedin_url`
+- `opportunity_id` → `opportunities.id` (nullable, `ON DELETE SET NULL`). Most contacts are pure networking with no opportunity.
+- Contact history (flat, not an events table): `first_contact_at` (thread start), `last_contact_at`, `last_contact_method`
+- Cadence: `cadence_days` (default 14; presets 7/14/30/90), `next_touch_override`
+- `status`: `active` | `closed`
+- notes via polymorphic `notes` table
+- Email and phone are deliberately **not** stored — method matters, the raw detail lives in Sam's mail/phone app.
+
 ### `notes` (polymorphic)
 - `body`, `noteable_type`, `noteable_id`
 - Attached to source tasks only (not daily plan items)
@@ -141,6 +151,52 @@ Import mode: append with duplicate warnings. Daily Plan rows assigned to user-se
 ### Deferred
 
 - Yellow/red stale-row highlighting on Follow Up by days since last update.
+
+## Network tab behavior
+
+**The organising idea: the app computes who is due, rather than asking for a follow-up date to be typed.** The previous design stored a hand-entered `followup_contact_at`, which in practice was left blank on 15 of 16 rows — so nobody was ever surfaced as overdue.
+
+### Derived next-touch date
+
+`next_touch_at` is a model property, not a column:
+
+1. `next_touch_override` if set, else
+2. `last_contact_at + cadence_days`, else
+3. `created_at` — so a never-contacted person is due immediately and sorts alongside overdue follow-ups with no special case in the ordering.
+
+`days_overdue` is `today - next_touch_at` (positive = overdue). `is_due` additionally requires `status == active`.
+
+Ordering is done in Python (`app/services/network.py`), not SQL, because `next_touch_at` is computed. The list is one row per person at personal scale — tens, not thousands.
+
+### Page sections (stacked, top to bottom)
+
+1. **Quick-add** — name + "How I know them" only. A new person has no contact logged, so they land straight in Reach out.
+2. **Reach out** — `active AND is_due`, most overdue first. Rolodex-style cards. Shows `REACH_OUT_VISIBLE` (3) with the remainder behind a `<details>` disclosure, so a month of neglect reads as a short list rather than a backlog.
+3. **Scheduled** — `active AND NOT is_due`, soonest first. Compact table; the quiet list.
+4. **Closed threads** — `status == closed`, collapsed. Light: identify the person and re-open in one click.
+
+### Actions
+
+| Action | Effect |
+|---|---|
+| **Log contact** (method dropdown) | `last_contact_at = today`, sets method, backfills `first_contact_at` if unset, clears `next_touch_override` |
+| **Snooze 1w** | `next_touch_override = today + 7`. Never touches `last_contact_at` — the escape valve exists so the panel can be cleared *honestly* |
+| **No further contact** | `status = closed`. **One click, no confirm dialog** — safe because "Reach out again" is the undo |
+| **Reach out again** | `status = active`, `next_touch_override = today` → straight back into the queue |
+| **Cadence** | Inline preset dropdown (7/14/30/90); off-preset or junk input falls back to 14 |
+
+**HTMX protocol:** every action returns `network/partials/sections_swap.html`, which repaints all three sections via `hx-swap-oob`. Any single action can move a person between any two sections, so repainting the lot avoids the stale/duplicate/vanishing-row bugs that per-row swaps keep producing. Buttons use `hx-swap="none"`; CSRF rides the `X-CSRF-Token` header from `base.html`.
+
+### Daily Plan nudge
+
+Today's plan renders a **read-only** "Reach out (N due)" block listing up to 3 names and linking to `/network`. It creates no `MasterTask` rows and nothing checkable — deliberately staying clear of `assign_due_tasks`, `daily_plan_dismissals`, and the recurring-completion fork. Shown only when `plan_date == today` and someone is due.
+
+### Not in scope / deferred
+
+- `Opportunity.connections` and `referred_by` remain free text, not linked to people (`referred_by` names several people absent from Network entirely).
+- No contact-event history table. Flat `last_contact_at` + method is enough while every touch is logged by hand; the single `log_contact` write path leaves room to add history later.
+- Recruiters spanning several openings use notes rather than a many-to-many link.
+- **Auto-discovery of responses (Gmail API + Unipile)** — see `docs/PLANNING.md`. This is the feature expected to make the tab self-maintaining, and the point at which an events table starts to pay for itself.
 
 ### Adzuna job suggestions
 

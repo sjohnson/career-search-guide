@@ -1157,3 +1157,185 @@ body {
     grid-column: 2;
   }
 }
+
+/* ---------- Network: reach-out queue ---------- */
+
+.quick-add-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.quick-add-form input {
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.quick-add-form input[name="name"] { width: 14rem; }
+.quick-add-form input[name="affiliation"] { flex: 1; min-width: 10rem; }
+
+.network-section { margin-bottom: 2rem; }
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.section-head h2,
+.closed-section summary h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.closed-section summary h2 { display: inline; }
+
+.section-count {
+  display: inline-block;
+  min-width: 1.5rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.section-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0;
+}
+
+.contact-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.contact-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0.75rem 1rem;
+}
+
+.contact-card.is-overdue { border-left-color: var(--warm); }
+
+.contact-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.contact-name { font-size: 1.05rem; }
+
+.overdue-badge {
+  flex-shrink: 0;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.overdue-badge.is-overdue { background: var(--warm-soft); color: #9c5a2a; }
+.overdue-badge.is-new { background: #eceaf5; color: #5a4f8a; }
+
+.contact-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.75rem;
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.meta-link { color: var(--accent); text-decoration: none; }
+.meta-link:hover { text-decoration: underline; }
+.meta-quiet { color: var(--muted); font-size: 0.85em; }
+
+.contact-card-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.contact-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.contact-card-actions .inline-form {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.micro-select {
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.22rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.reach-out-overflow { margin-top: 0.6rem; }
+
+.reach-out-overflow > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.35rem 0;
+}
+
+.reach-out-overflow[open] > summary { margin-bottom: 0.6rem; }
+
+.inline-actions.tight { gap: 0.3rem; }
+
+/* Daily Plan nudge */
+
+.reach-out-nudge {
+  margin-top: 1.5rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--warm);
+}
+
+.reach-out-nudge h2 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.reach-out-nudge-names {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.reach-out-nudge-link {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--accent);
+}

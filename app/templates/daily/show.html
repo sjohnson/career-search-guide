@@ -102,6 +102,10 @@
         <button type="submit" class="btn btn-primary">Add task</button>
       </form>
     </section>
+
+    {% if reach_out_due %}
+      {% include "daily/partials/reach_out_nudge.html" %}
+    {% endif %}
   </section>
 
   <aside class="calendar-panel card" id="calendar-panel">

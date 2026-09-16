@@ -1,0 +1,78 @@
+{# Scheduled: open threads that are not yet due. The quiet list — enough to
+   scan and re-prioritise, without the card weight of the Reach out panel. #}
+<section class="network-section scheduled-section">
+  <div class="section-head">
+    <h2>Scheduled{% if scheduled %} <span class="section-count">{{ scheduled | length }}</span>{% endif %}</h2>
+  </div>
+
+  {% if scheduled %}
+  <div class="table-scroll network-scroll">
+  <table class="data-table compact network-table">
+    <colgroup>
+      <col style="width: 16%">
+      <col style="width: 16%">
+      <col style="width: 7.5rem">
+      <col style="width: 8.5rem">
+      <col style="width: 9rem">
+      <col>
+      <col style="width: 12rem">
+    </colgroup>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>How I know them</th>
+        <th class="network-date-col">Next touch</th>
+        <th class="network-date-col">Last contact</th>
+        <th>Cadence</th>
+        <th>Note</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for contact in scheduled %}
+      <tr class="network-row" id="network-row-{{ contact.id }}">
+        <td>
+          <strong>{{ contact.name }}</strong>
+          {% if contact.linkedin_url %}
+          <a href="{{ contact.linkedin_url }}" target="_blank" rel="noopener" title="LinkedIn profile">&#8599;</a>
+          {% endif %}
+        </td>
+        <td class="connection-cell">
+          {{ contact.affiliation or '—' }}
+          {% if contact.opportunity %}<span class="meta-quiet"> &middot; {{ contact.opportunity.company }}</span>{% endif %}
+        </td>
+        <td class="network-date-col">{{ contact.next_touch_at.strftime('%Y-%m-%d') }}</td>
+        <td class="network-date-col">
+          {%- if contact.last_contact_at %}{{ contact.last_contact_at.strftime('%Y-%m-%d') }}{% else %}—{% endif -%}
+        </td>
+        <td>
+          <select class="micro-select cadence-select" aria-label="Follow-up cadence"
+                  hx-post="/network/{{ contact.id }}/cadence" hx-swap="none"
+                  name="cadence_days" hx-trigger="change">
+            {% for days in cadence_choices %}
+            <option value="{{ days }}" {% if contact.cadence_days == days %}selected{% endif %}>{{ cadence_labels[days] }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td class="notes-cell notes-truncate" tabindex="0" role="button" title="Click to expand notes">{{ notes.get(contact.id, '') or '—' }}</td>
+        <td class="actions-col">
+          <div class="inline-actions tight">
+            <form class="inline-form" hx-post="/network/{{ contact.id }}/log-contact" hx-swap="none">
+              <input type="hidden" name="method" value="{{ contact.last_contact_method or '' }}">
+              <button type="submit" class="btn btn-sm btn-primary" title="Log a contact today">Log</button>
+            </form>
+            <button type="button" class="btn btn-sm btn-ghost"
+                    hx-post="/network/{{ contact.id }}/close" hx-swap="none"
+                    title="No further contact needed">Close</button>
+            <a href="/network/{{ contact.id }}/edit" class="action-icon-btn action-edit" title="Edit" aria-label="Edit">&#9998;</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="section-empty">No quiet threads — everyone open is due.</p>
+  {% endif %}
+</section>

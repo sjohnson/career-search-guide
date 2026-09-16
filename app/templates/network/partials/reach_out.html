@@ -1,0 +1,29 @@
+{# Reach out: open threads that are due. Shows the most overdue few and tucks
+   the rest behind a disclosure, so a month of neglect reads as a short list
+   rather than a backlog to avoid. #}
+<section class="network-section reach-out-section">
+  <div class="section-head">
+    <h2>Reach out{% if due_count %} <span class="section-count">{{ due_count }}</span>{% endif %}</h2>
+  </div>
+
+  {% if due_visible %}
+  <div class="contact-card-list">
+    {% for contact in due_visible %}
+      {% include "network/partials/contact_card.html" %}
+    {% endfor %}
+  </div>
+
+  {% if due_overflow %}
+  <details class="reach-out-overflow">
+    <summary>{{ due_overflow | length }} more due</summary>
+    <div class="contact-card-list">
+      {% for contact in due_overflow %}
+        {% include "network/partials/contact_card.html" %}
+      {% endfor %}
+    </div>
+  </details>
+  {% endif %}
+  {% else %}
+  <p class="section-empty">Nobody's due right now.</p>
+  {% endif %}
+</section>

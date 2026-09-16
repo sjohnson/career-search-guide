@@ -25,6 +25,7 @@ from app.services.daily_plan import (
     set_primary_note,
     uncomplete_plan_item,
 )
+from app.services.network import REACH_OUT_VISIBLE, due_contacts
 from app.templating import templates
 
 router = APIRouter(tags=["daily"])
@@ -90,6 +91,11 @@ def daily_plan_view(
     cy = cal_year or plan_date.year
     cm = cal_month or plan_date.month
 
+    # Network nudge: only on today's plan — it answers "who should I contact
+    # now", which is meaningless on a past or future date.
+    viewing_today = plan_date == actual_today and not is_sunday(actual_today)
+    all_due = due_contacts(db) if viewing_today else []
+
     return templates.TemplateResponse(
         request,
         "daily/show.html",
@@ -108,7 +114,9 @@ def daily_plan_view(
             "cal_month": cm,
             "calendar_weeks": build_calendar_weeks(cy, cm),
             "is_sunday": is_sunday,
-            "viewing_today": plan_date == actual_today and not is_sunday(actual_today),
+            "viewing_today": viewing_today,
+            "reach_out_due": all_due[:REACH_OUT_VISIBLE],
+            "reach_out_total": len(all_due),
         },
     )
 
