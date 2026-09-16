@@ -20,3 +20,4 @@ build/
 htmlcov/
 .pytest_cache/
 uploads/
+tmp/

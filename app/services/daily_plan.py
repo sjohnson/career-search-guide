@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -17,6 +17,7 @@ from app.models import (
     TaskStatus,
 )
 from app.config import DEFAULT_MISSION
+from app.utils import utcnow
 
 UNORDERED_PRIORITY = 999_999
 
@@ -133,7 +134,7 @@ def set_primary_note(db: Session, noteable_type: str, noteable_id: int, body: st
     if body:
         if notes:
             notes[0].body = body
-            notes[0].updated_at = datetime.utcnow()
+            notes[0].updated_at = utcnow()
         else:
             db.add(Note(body=body, noteable_type=noteable_type, noteable_id=noteable_id))
     elif notes:
@@ -293,7 +294,7 @@ def assign_due_tasks(db: Session, plan: DailyPlan, *, viewing_today: bool) -> No
         )
         existing_learning.add(task.id)
 
-    plan.last_assigned_at = datetime.utcnow()
+    plan.last_assigned_at = utcnow()
     db.commit()
 
 
@@ -357,14 +358,14 @@ def assign_for_target_date_change(
 
 def complete_plan_item(db: Session, item: DailyPlanItem) -> None:
     if item.master_task and item.master_task.is_recurring:
-        item.completed_at = datetime.utcnow()
+        item.completed_at = utcnow()
         db.commit()
         return
     source = item.source_task
     if not source:
         return
     source.status = TaskStatus.COMPLETED.value
-    source.completed_at = datetime.utcnow()
+    source.completed_at = utcnow()
     db.commit()
 
 
@@ -440,7 +441,7 @@ def archive_source_task(db: Session, task: MasterTask | LearningTask) -> None:
 
 def complete_source_task(db: Session, task: MasterTask | LearningTask) -> None:
     task.status = TaskStatus.COMPLETED.value
-    task.completed_at = datetime.utcnow()
+    task.completed_at = utcnow()
     db.commit()
 
 

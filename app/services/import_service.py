@@ -24,6 +24,7 @@ from app.services.opportunities import (
     normalize_remote_status,
     normalize_source,
 )
+from app.utils import utcnow
 
 
 def _normalize_remote_import(value: str) -> str | None:
@@ -156,7 +157,7 @@ def _import_daily_plan(
             target_completion_date=plan_date,
             date_kind=DateKind.GOAL.value,
             status=status,
-            completed_at=datetime.utcnow() if completed else None,
+            completed_at=utcnow() if completed else None,
         )
         db.add(master)
         db.flush()
@@ -209,7 +210,7 @@ def _import_master_tasks(db: Session, sheet, result: ImportResult, mode: str) ->
             target_completion_date=target,
             date_kind=DateKind.REQUIREMENT.value if target else DateKind.GOAL.value,
             status=TaskStatus.COMPLETED.value if completed else TaskStatus.CURRENT.value,
-            completed_at=datetime.utcnow() if completed else None,
+            completed_at=utcnow() if completed else None,
         )
         db.add(master)
         db.flush()
@@ -255,7 +256,7 @@ def _import_learning_tasks(db: Session, sheet, result: ImportResult, mode: str) 
             priority=_parse_int(row[col["priority"]]) if "priority" in col else 0,
             target_completion_date=target,
             status=TaskStatus.COMPLETED.value if completed else TaskStatus.CURRENT.value,
-            completed_at=datetime.utcnow() if completed else None,
+            completed_at=utcnow() if completed else None,
         )
         db.add(learning)
         db.flush()

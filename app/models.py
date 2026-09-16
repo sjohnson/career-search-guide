@@ -16,6 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.utils import utcnow
 
 
 class DateKind(str, Enum):
@@ -45,7 +46,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 
 class Settings(Base):
@@ -54,7 +55,7 @@ class Settings(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     mission_statement: Mapped[str] = mapped_column(Text, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, default=utcnow, onupdate=utcnow
     )
 
 
@@ -75,7 +76,7 @@ class AdzunaSettings(Base):
     results_limit: Mapped[int] = mapped_column(Integer, nullable=False)
     stack_default: Mapped[str] = mapped_column(String(100), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, default=utcnow, onupdate=utcnow
     )
 
 
@@ -85,7 +86,7 @@ class DailyPlan(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     plan_date: Mapped[date] = mapped_column(Date, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     last_assigned_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     items: Mapped[list["DailyPlanItem"]] = relationship(
@@ -123,7 +124,7 @@ class DailyPlanDismissal(Base):
     learning_task_id: Mapped[int | None] = mapped_column(
         ForeignKey("learning_tasks.id", ondelete="CASCADE"), nullable=True
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     daily_plan: Mapped["DailyPlan"] = relationship(back_populates="dismissals")
 
@@ -149,7 +150,7 @@ class DailyPlanItem(Base):
     learning_task_id: Mapped[int | None] = mapped_column(
         ForeignKey("learning_tasks.id", ondelete="CASCADE"), nullable=True
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     daily_plan: Mapped["DailyPlan"] = relationship(back_populates="items")
@@ -209,7 +210,7 @@ class MasterTask(Base):
     status: Mapped[str] = mapped_column(String(20), default=TaskStatus.CURRENT.value)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     plan_items: Mapped[list["DailyPlanItem"]] = relationship(back_populates="master_task")
 
@@ -230,7 +231,7 @@ class LearningTask(Base):
     target_completion_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default=TaskStatus.CURRENT.value)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
     plan_items: Mapped[list["DailyPlanItem"]] = relationship(back_populates="learning_task")
 
@@ -340,9 +341,9 @@ class Opportunity(Base):
     applied_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     equity: Mapped[bool] = mapped_column(Boolean, default=False)
     collaboration_focused: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, default=utcnow, onupdate=utcnow
     )
 
     @property
@@ -384,9 +385,9 @@ class NetworkContact(Base):
     followup_contact_at: Mapped[date | None] = mapped_column(Date, nullable=True)
     method: Mapped[str | None] = mapped_column(String(30), nullable=True)
     opportunities: Mapped[str | None] = mapped_column(String(300), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, default=utcnow, onupdate=utcnow
     )
 
 
@@ -398,7 +399,7 @@ class Note(Base):
     body: Mapped[str] = mapped_column(Text, nullable=False, default="")
     noteable_type: Mapped[str] = mapped_column(String(50), nullable=False)
     noteable_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, default=utcnow, onupdate=utcnow
     )

@@ -1,8 +1,9 @@
-from datetime import date, datetime
+from datetime import date
 
 from sqlalchemy.orm import Query, Session
 
 from app.models import Opportunity, OpportunityLifecycle, PipelineStage
+from app.utils import utcnow
 
 SORTABLE_COLUMNS = {
     "company": Opportunity.company,
@@ -69,7 +70,7 @@ ARCHIVE_ON_STAGES = frozenset(
 
 
 def touch_opportunity(opp: Opportunity) -> None:
-    opp.updated_at = datetime.utcnow()
+    opp.updated_at = utcnow()
 
 
 def section_for_stage(stage: str) -> str:
