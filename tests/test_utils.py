@@ -6,36 +6,28 @@ the `.replace(tzinfo=None)` to return a proper aware datetime, or swapping in
 ways that are easy to miss locally, so each is pinned by a test here.
 """
 
-import os
-import time
 from datetime import datetime, timezone
 
-import pytest
-
+import app.utils
 from app.database import SessionLocal
 from app.models import Opportunity
 from app.utils import utcnow
 
 
-@pytest.fixture
-def non_utc_timezone():
-    """Run the test under a local zone that is never equal to UTC.
+class FrozenDatetime:
+    """Stand-in for `datetime` that reports different times for UTC and local.
 
-    Without this, a `datetime.now()` regression would pass on any machine
-    already set to UTC — including most CI runners.
+    Lets the test tell whether `utcnow()` asked for UTC or just read the
+    system clock's zone, without depending on `time.tzset()` — which mise's
+    Python 3.13 build does not provide on macOS.
     """
-    if not hasattr(time, "tzset"):
-        pytest.skip("time.tzset() is Unix-only")
 
-    original = os.environ.get("TZ")
-    os.environ["TZ"] = "America/Denver"  # UTC-6/-7 year round
-    time.tzset()
-    yield
-    if original is None:
-        os.environ.pop("TZ", None)
-    else:
-        os.environ["TZ"] = original
-    time.tzset()
+    UTC = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    LOCAL = datetime(2026, 1, 1, 5, 0, 0)  # the same instant, Denver-style
+
+    @classmethod
+    def now(cls, tz=None):
+        return cls.LOCAL if tz is None else cls.UTC.astimezone(tz)
 
 
 class TestUtcnow:
@@ -45,13 +37,10 @@ class TestUtcnow:
         comparison against a stored timestamp."""
         assert utcnow().tzinfo is None
 
-    def test_returns_utc_not_local_time(self, non_utc_timezone):
-        result = utcnow()
+    def test_returns_utc_not_local_time(self, monkeypatch):
+        monkeypatch.setattr(app.utils, "datetime", FrozenDatetime)
 
-        assert abs((result - datetime.now(timezone.utc).replace(tzinfo=None)).total_seconds()) < 5
-        # Denver runs 6-7 hours behind UTC, so a result anywhere near local
-        # time means the function is reading the system clock's zone.
-        assert abs((result - datetime.now()).total_seconds()) > 3600
+        assert utcnow() == datetime(2026, 1, 1, 12, 0, 0)
 
     def test_is_comparable_with_a_stored_timestamp(self):
         """The failure this helper exists to prevent: arithmetic against a
