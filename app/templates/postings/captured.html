@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block page_class %}postings-capture{% endblock %}
+{% block title %}Saved — Career Search Guide{% endblock %}
+
+{% block content %}
+<section class="card capture-card">
+  {% if outcome == "attached" %}
+  <h1>Employer URL saved</h1>
+  <p>Attached to <strong>{{ posting.title }}</strong> · {{ posting.company }}.</p>
+  {% elif outcome == "created" %}
+  <h1>Posting saved</h1>
+  <p><strong>{{ posting.title }}</strong> · {{ posting.company }} is now in your saved postings.</p>
+  {% else %}
+  <h1>Already saved</h1>
+  <p>This URL is already stored as <strong>{{ posting.title }}</strong> · {{ posting.company }}.</p>
+  {% endif %}
+  <div class="inline-actions">
+    <button type="button" class="btn btn-primary" onclick="window.close()">Close tab</button>
+    <a class="btn btn-ghost" href="/opportunities">Go to Opportunities</a>
+  </div>
+</section>
+{% endblock %}

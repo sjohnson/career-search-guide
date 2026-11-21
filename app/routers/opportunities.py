@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import (
+    JobPosting,
     NoteableType,
     Opportunity,
     OpportunityLifecycle,
@@ -16,7 +17,9 @@ from app.models import (
     RemoteStatus,
     SOURCE_LABELS,
 )
-from app.services.adzuna import bust_adzuna_cache, get_adzuna_jobs, get_cached_job, map_to_opportunity_prefill
+from app import config
+from app.routers.postings import panel_context
+from app.services import job_postings
 from app.services.adzuna_settings import get_or_create_adzuna_settings
 from app.services.daily_plan import get_or_create_settings, get_primary_note_body, set_primary_note
 from app.services.opportunities import (
@@ -101,12 +104,10 @@ def _rows_context(db: Session, sort_by: str, sort_dir: str, page: int = 1) -> di
 
 def _list_context(request: Request, db: Session, sort_by: str, sort_dir: str, page: int = 1) -> dict:
     settings = get_or_create_settings(db)
-    adzuna_settings = get_or_create_adzuna_settings(db)
     ctx = _rows_context(db, sort_by, sort_dir, page)
     ctx["mission"] = settings.mission_statement
     ctx["sortable_columns"] = SORTABLE
-    ctx["adzuna"] = get_adzuna_jobs(adzuna_settings, refresh=False)
-    ctx["adzuna_remote_labels"] = REMOTE_STATUS_LABELS
+    ctx.update(panel_context(request, db))
     return ctx
 
 
@@ -198,6 +199,7 @@ def create_opportunity(
     equity: str = Form(""),
     collaboration_focused: str = Form(""),
     notes: str = Form(""),
+    job_posting_id: str = Form(""),
     db: Session = Depends(get_db),
 ):
     stage = normalize_pipeline_stage(pipeline_stage)
@@ -227,6 +229,8 @@ def create_opportunity(
     db.add(opp)
     db.flush()
     set_primary_note(db, NoteableType.OPPORTUNITY.value, opp.id, notes)
+    if job_posting_id.isdigit():
+        job_postings.link_opportunity(db, int(job_posting_id), opp)
     touch_opportunity(opp)
     if stage in ARCHIVE_ON_STAGES:
         archive_opportunity(db, opp)
@@ -237,15 +241,10 @@ def create_opportunity(
 
 @router.post("/adzuna/refresh", response_class=HTMLResponse)
 def refresh_adzuna_jobs(request: Request, db: Session = Depends(get_db)):
-    adzuna_settings = get_or_create_adzuna_settings(db)
-    adzuna = get_adzuna_jobs(adzuna_settings, refresh=True)
     return templates.TemplateResponse(
         request,
         "opportunities/partials/adzuna_panel.html",
-        {
-            "adzuna": adzuna,
-            "adzuna_remote_labels": REMOTE_STATUS_LABELS,
-        },
+        panel_context(request, db, refresh=True),
     )
 
 
@@ -255,16 +254,21 @@ def adzuna_settings_form(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "opportunities/partials/adzuna_settings_modal.html",
-        {"adzuna_settings": adzuna_settings},
+        {"adzuna_settings": adzuna_settings, "max_pages_limit": config.ADZUNA_MAX_PAGES_LIMIT},
     )
 
 
 @router.post("/adzuna/settings", response_class=HTMLResponse)
 def update_adzuna_settings(
     request: Request,
-    search_what: str = Form(...),
-    search_what_and: str = Form(...),
-    search_what_or: str = Form(...),
+    search_what: str = Form(""),
+    search_what_and: str = Form(""),
+    search_what_or: str = Form(""),
+    search_what_exclude: str = Form(""),
+    search_title_only: str = Form(""),
+    max_pages: str = Form("1"),
+    title_exclude: str = Form(""),
+    company_blocklist: str = Form(""),
     salary_min: str = Form(...),
     slc_where: str = Form(...),
     slc_distance: str = Form(...),
@@ -277,9 +281,26 @@ def update_adzuna_settings(
     db: Session = Depends(get_db),
 ):
     adzuna_settings = get_or_create_adzuna_settings(db)
+    if not (search_what.strip() or search_what_and.strip() or search_title_only.strip()):
+        # With no positive term Adzuna returns every US job over the salary floor.
+        return templates.TemplateResponse(
+            request,
+            "opportunities/partials/adzuna_settings_modal.html",
+            {
+                "adzuna_settings": adzuna_settings,
+                "max_pages_limit": config.ADZUNA_MAX_PAGES_LIMIT,
+                "error": "Fill in at least one of keywords, required keywords, or title. Settings not saved.",
+            },
+        )
     adzuna_settings.search_what = search_what.strip()
     adzuna_settings.search_what_and = search_what_and.strip()
     adzuna_settings.search_what_or = search_what_or.strip()
+    adzuna_settings.search_what_exclude = search_what_exclude.strip()
+    adzuna_settings.search_title_only = search_title_only.strip()
+    if max_pages.isdigit():
+        adzuna_settings.max_pages = max(1, min(int(max_pages), config.ADZUNA_MAX_PAGES_LIMIT))
+    adzuna_settings.title_exclude = "\n".join(job_postings.parse_lines(title_exclude))
+    adzuna_settings.company_blocklist = "\n".join(job_postings.parse_lines(company_blocklist))
     adzuna_settings.salary_min = int(salary_min) if salary_min.isdigit() else adzuna_settings.salary_min
     adzuna_settings.slc_where = slc_where.strip()
     adzuna_settings.slc_distance = int(slc_distance) if slc_distance.isdigit() else adzuna_settings.slc_distance
@@ -293,36 +314,27 @@ def update_adzuna_settings(
     adzuna_settings.stack_default = stack_default.strip()
     db.commit()
     db.refresh(adzuna_settings)
-    bust_adzuna_cache()
-    adzuna = get_adzuna_jobs(adzuna_settings, refresh=True)
+    # needs_refresh compares a fingerprint of the search terms, so changing a
+    # search term triggers a fetch here while filter-only edits cost no API calls.
     return templates.TemplateResponse(
         request,
         "opportunities/partials/adzuna_settings_saved.html",
-        {
-            "adzuna": adzuna,
-            "adzuna_remote_labels": REMOTE_STATUS_LABELS,
-        },
+        panel_context(request, db),
     )
 
 
-@router.get("/adzuna/{adzuna_id}/add-form", response_class=HTMLResponse)
-def adzuna_add_form(request: Request, adzuna_id: str, db: Session = Depends(get_db)):
-    adzuna_settings = get_or_create_adzuna_settings(db)
-    job = get_cached_job(adzuna_id)
-    if not job:
-        get_adzuna_jobs(adzuna_settings, refresh=False)
-        job = get_cached_job(adzuna_id)
-    if not job:
-        return HTMLResponse("<p class='error'>Job not found in cache. Try refreshing jobs.</p>", status_code=404)
-    prefill = map_to_opportunity_prefill(job, adzuna_settings)
-    settings = get_or_create_settings(db)
+@router.get("/from-posting/{posting_id}", response_class=HTMLResponse)
+def add_from_posting_form(request: Request, posting_id: int, db: Session = Depends(get_db)):
+    posting = db.get(JobPosting, posting_id)
+    if posting is None:
+        return HTMLResponse("<p class='error'>Posting not found.</p>", status_code=404)
     return templates.TemplateResponse(
         request,
         "opportunities/partials/opportunity_modal.html",
         {
-            "prefill": prefill,
-            "job": job,
-            "mission": settings.mission_statement,
+            "prefill": job_postings.map_to_opportunity_prefill(posting, get_or_create_adzuna_settings(db)),
+            "job": posting,
+            "mission": get_or_create_settings(db).mission_statement,
             **_table_labels(),
         },
     )

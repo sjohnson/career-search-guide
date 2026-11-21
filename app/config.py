@@ -36,7 +36,20 @@ SESSION_HTTPS_ONLY = os.getenv("SESSION_HTTPS_ONLY", "false").lower() in {
 }
 
 IMPORT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+# How old the latest Adzuna fetch may get before a page load triggers a new one.
 ADZUNA_CACHE_TTL_SECONDS = 4 * 60 * 60
+ADZUNA_RESULTS_PER_PAGE = 50  # Adzuna's maximum page size
+ADZUNA_MAX_PAGES_LIMIT = 3  # 4 buckets x 3 pages = 12 calls, under the 15/minute cap
+# Adzuna trial-plan limits, as (window in seconds, max calls). Enforced over
+# rolling windows, which is at least as strict as calendar ones.
+ADZUNA_QUOTA_WINDOWS = (
+    ("minute", 60, 15),
+    ("day", 24 * 60 * 60, 150),
+    ("week", 7 * 24 * 60 * 60, 750),
+    ("month", 30 * 24 * 60 * 60, 1500),
+)
+# Stored postings not seen by a refresh in this many days drop out of the panel.
+POSTING_VISIBLE_DAYS = 30
 ADZUNA_SALARY_MIN = 140_000
 ADZUNA_RESULTS_LIMIT = 10
 ADZUNA_SEARCH_WHAT = "senior software engineer"

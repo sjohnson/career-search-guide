@@ -119,6 +119,9 @@ class TestFormatSalary:
     def test_empty(self):
         assert format_salary(None, None, None) == "—"
 
+    def test_equal_min_and_max_show_one_figure(self):
+        assert format_salary(150000, 150000, "USD") == "$150k USD"
+
 
 class TestPaginateActive:
     def test_second_page(self):

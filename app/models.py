@@ -9,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -76,6 +77,22 @@ class AdzunaSettings(Base):
     charlotte_distance: Mapped[int] = mapped_column(Integer, nullable=False)
     results_limit: Mapped[int] = mapped_column(Integer, nullable=False)
     stack_default: Mapped[str] = mapped_column(String(100), nullable=False)
+    # Server-side Adzuna filters: what_exclude drops postings whose *full*
+    # text contains any of these words; title_only requires all of these
+    # words in the title. Both blank by default (no filtering).
+    search_what_exclude: Mapped[str] = mapped_column(
+        String(500), nullable=False, default="", server_default=""
+    )
+    search_title_only: Mapped[str] = mapped_column(
+        String(255), nullable=False, default="", server_default=""
+    )
+    # Pages fetched per search bucket (50 results/page). Each page is one API hit.
+    max_pages: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default=text("1")
+    )
+    # In-app filters applied when reading stored postings (one entry per line).
+    title_exclude: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    company_blocklist: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, onupdate=utcnow
     )
@@ -377,6 +394,8 @@ class Opportunity(Base):
             return f"${amount:,}"
 
         if self.salary_min is not None and self.salary_max is not None:
+            if self.salary_min == self.salary_max:
+                return f"{fmt(self.salary_min)} {currency}"
             return f"{fmt(self.salary_min)}–{fmt(self.salary_max)} {currency}"
         if self.salary_min is not None:
             return f"{fmt(self.salary_min)}+ {currency}"
@@ -392,6 +411,93 @@ class Opportunity(Base):
             return "highlight-bronze"
         return ""
 
+
+
+class JobPostingSource(str, Enum):
+    ADZUNA = "adzuna"
+    RUBY_ON_REMOTE = "ruby_on_remote"
+    MANUAL = "manual"
+
+
+class JobPosting(Base):
+    """A posting gathered from a job source, stored for triage and for
+    ai-job-search to consume. Distinct from `Opportunity`, which is a posting
+    the user has decided to pursue (`opportunity_id` links the two).
+
+    `(source, source_id)` is the dedupe key: the Adzuna job id for Adzuna, the
+    normalized URL for captured postings. `dedupe_key` (company|title) is a
+    looser secondary key for spotting the same job reposted under a new id.
+    """
+
+    __tablename__ = "job_postings"
+    __table_args__ = (
+        UniqueConstraint("source", "source_id", name="uq_job_postings_source_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source: Mapped[str] = mapped_column(String(30), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(1000), nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    company: Mapped[str] = mapped_column(String(255), nullable=False)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    remote_status: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    salary_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    salary_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    salary_currency: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    # Adzuna estimates salary when a posting states none; never present an
+    # estimate as the employer's number.
+    salary_is_predicted: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("0")
+    )
+    contract_time: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Adzuna's API truncates descriptions to ~500 characters.
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    # The employer's own posting URL, captured via the bookmarklet.
+    posting_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    posting_url_captured_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    dedupe_key: Mapped[str] = mapped_column(String(800), nullable=False, index=True)
+    posted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    # List of {bucket, query..., first_seen_at, last_seen_at}: which searches found it.
+    search_hits: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+    opened_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    dismissed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    opportunity_id: Mapped[int | None] = mapped_column(
+        ForeignKey("opportunities.id", ondelete="SET NULL"), nullable=True
+    )
+
+    opportunity: Mapped["Opportunity | None"] = relationship()
+
+    @property
+    def salary_display(self) -> str:
+        if self.salary_min is None and self.salary_max is None:
+            return "—"
+        shown = Opportunity(
+            company="",
+            salary_min=self.salary_min,
+            salary_max=self.salary_max,
+            salary_currency=self.salary_currency or "USD",
+        ).salary_display
+        return f"~{shown} (est.)" if self.salary_is_predicted else shown
+
+
+class AdzunaFetch(Base):
+    """One Adzuna refresh. `api_calls` feeds the quota guard, so it is
+    recorded even when the fetch fails partway."""
+
+    __tablename__ = "adzuna_fetches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow, index=True)
+    api_calls: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    query_counts: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    received_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    new_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    settings_fingerprint: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 class NetworkContact(Base):
     """A person in the job-search network.
