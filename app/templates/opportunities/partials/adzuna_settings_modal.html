@@ -10,13 +10,23 @@
       <h2>Adzuna search settings</h2>
       <button type="button" class="btn btn-ghost btn-xs modal-close" onclick="closeAppModal()">×</button>
     </header>
-    <p class="meta modal-subtitle">API keys remain in <code>.env</code>. Changes apply on next refresh.</p>
+    <p class="meta modal-subtitle">API keys remain in <code>.env</code>. Changing a search term fetches fresh results on save.</p>
+    {% if error %}<p class="full-width adzuna-message error">{{ error }}</p>{% endif %}
 
-    <label>Search keywords (what)<input type="text" name="search_what" value="{{ adzuna_settings.search_what }}" required></label>
-    <label>Required keyword (what_and)<input type="text" name="search_what_and" value="{{ adzuna_settings.search_what_and }}" required></label>
-    <label>Optional keyword (what_or)<input type="text" name="search_what_or" value="{{ adzuna_settings.search_what_or }}" required></label>
+    <h3 class="full-width settings-group-title">Search terms (matched by Adzuna against the full posting)</h3>
+    <label>Keywords: all must appear (what)<input type="text" name="search_what" value="{{ adzuna_settings.search_what }}"></label>
+    <label>Required keywords: all must appear (what_and)<input type="text" name="search_what_and" value="{{ adzuna_settings.search_what_and }}"></label>
+    <label>Remote search: any of (what_or)<input type="text" name="search_what_or" value="{{ adzuna_settings.search_what_or }}"></label>
+    <label>Exclude postings containing any of (what_exclude)<input type="text" name="search_what_exclude" value="{{ adzuna_settings.search_what_exclude }}" placeholder="e.g. clearance java"></label>
+    <label>Title must contain all of (title_only)<input type="text" name="search_title_only" value="{{ adzuna_settings.search_title_only }}" placeholder="blank = any title"></label>
     <label>Minimum salary<input type="number" name="salary_min" value="{{ adzuna_settings.salary_min }}" required></label>
-    <label>Results to show<input type="number" name="results_limit" value="{{ adzuna_settings.results_limit }}" min="1" max="20" required></label>
+    <label>Pages per search (50 results each; 1 API call per page)<input type="number" name="max_pages" value="{{ adzuna_settings.max_pages }}" min="1" max="{{ max_pages_limit }}" required></label>
+    <p class="full-width meta">Space-separated words. Adzuna matches word stems ("developer" also matches "development"). At least one of keywords, required keywords, or title must be filled in.</p>
+
+    <h3 class="full-width settings-group-title">In-app filters (applied to saved postings; no API calls)</h3>
+    <label>Hide titles containing (one per line)<textarea name="title_exclude" rows="4" placeholder="Principal&#10;Manager">{{ adzuna_settings.title_exclude }}</textarea></label>
+    <label>Blocked companies (one per line)<textarea name="company_blocklist" rows="4">{{ adzuna_settings.company_blocklist }}</textarea></label>
+    <label>Results to show<input type="number" name="results_limit" value="{{ adzuna_settings.results_limit }}" min="1" max="100" required></label>
     <label>Default stack (prefill)<input type="text" name="stack_default" value="{{ adzuna_settings.stack_default }}" required></label>
 
     <h3 class="full-width settings-group-title">Salt Lake City metro</h3>

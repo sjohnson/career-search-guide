@@ -2,11 +2,12 @@
   <form method="post" action="/opportunities" class="form-grid wide">
     {% include "shared/partials/csrf_input.html" %}
     <header class="modal-header">
-      <h2>Add opportunity from Adzuna</h2>
+      <h2>Add opportunity from saved posting</h2>
       <button type="button" class="btn btn-ghost btn-xs modal-close" onclick="closeAppModal()">×</button>
     </header>
     <p class="meta modal-subtitle">{{ job.title }} · {{ job.company }}</p>
 
+    {% if job and job.id %}<input type="hidden" name="job_posting_id" value="{{ job.id }}">{% endif %}
     <label>Company<input type="text" name="company" value="{{ prefill.company }}" required></label>
     <label>Posting URL<input type="url" name="posting_url" value="{{ prefill.posting_url }}"></label>
     <label>Remote status

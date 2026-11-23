@@ -1,24 +1,29 @@
+"""Adzuna search: fetch, filter, store, and enforce the API quota.
+
+Results are stored in `job_postings` (see app.services.job_postings) and every
+refresh is logged in `adzuna_fetches`. The log replaces the old in-memory
+cache: a page load refreshes only when the latest fetch is older than
+ADZUNA_CACHE_TTL_SECONDS or the settings changed, and the summed `api_calls`
+drive the quota guard.
+"""
+
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any
+from datetime import datetime, timedelta, timezone
 
 import httpx
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
-from app.config import ADZUNA_APP_ID, ADZUNA_APP_KEY, ADZUNA_CACHE_TTL_SECONDS
-from app.models import AdzunaSettings, OpportunitySource, RemoteStatus
-from app.services.opportunities import format_salary
+from app import config
+from app.models import AdzunaFetch, AdzunaSettings, JobPosting, RemoteStatus
+from app.services import job_postings
+from app.utils import utcnow
 
-ADZUNA_BASE = "https://api.adzuna.com/v1/api/jobs/us/search/1"
-
-_cache: dict[str, Any] = {
-    "fetched_at": None,
-    "jobs": [],
-    "error": None,
-    "query_counts": {},
-    "settings_fingerprint": None,
-}
+ADZUNA_SEARCH_URL = "https://api.adzuna.com/v1/api/jobs/us/search/{page}"
 
 
 @dataclass
@@ -29,23 +34,40 @@ class AdzunaJob:
     location: str
     salary_min: int | None
     salary_max: int | None
+    salary_is_predicted: bool
+    contract_time: str | None
+    category: str | None
     redirect_url: str
     description: str
-    created: str
+    posted_at: datetime | None
     inferred_remote_status: str | None
-    bucket: str
 
-    def salary_display(self) -> str:
-        return format_salary(self.salary_min, self.salary_max, "USD")
+
+@dataclass
+class QuotaWindow:
+    name: str
+    used: int
+    limit: int
+
+    @property
+    def remaining(self) -> int:
+        return max(0, self.limit - self.used)
 
 
 @dataclass
 class AdzunaFeed:
-    jobs: list[AdzunaJob] = field(default_factory=list)
+    postings: list[JobPosting] = field(default_factory=list)
+    total: int = 0
+    hidden_by_filters: int = 0
     fetched_at: datetime | None = None
     error: str | None = None
-    query_counts: dict[str, int] = field(default_factory=dict)
-    thin_results: bool = False
+    query_counts: dict = field(default_factory=dict)
+    new_since: datetime | None = None
+    quota: list[QuotaWindow] = field(default_factory=list)
+
+    @property
+    def thin_results(self) -> bool:
+        return self.total < 3
 
 
 def infer_remote_status(title: str, description: str, location: str) -> str | None:
@@ -133,44 +155,125 @@ def passes_relevance_filter(job: AdzunaJob) -> bool:
     return True
 
 
-def _settings_fingerprint(settings: AdzunaSettings) -> str:
-    if settings.updated_at:
-        return str(settings.updated_at.timestamp())
-    return f"{settings.id}:{settings.salary_min}:{settings.results_limit}"
+
+# --- Quota -------------------------------------------------------------------
 
 
-def bust_adzuna_cache() -> None:
-    _cache["fetched_at"] = None
-    _cache["jobs"] = []
-    _cache["error"] = None
-    _cache["query_counts"] = {}
-    _cache["settings_fingerprint"] = None
+class QuotaExhausted(Exception):
+    pass
+
+
+def quota_usage(db: Session, now: datetime | None = None) -> list[QuotaWindow]:
+    now = now or utcnow()
+    windows = []
+    for name, seconds, limit in config.ADZUNA_QUOTA_WINDOWS:
+        used = (
+            db.query(func.coalesce(func.sum(AdzunaFetch.api_calls), 0))
+            .filter(AdzunaFetch.fetched_at >= now - timedelta(seconds=seconds))
+            .scalar()
+        )
+        windows.append(QuotaWindow(name=name, used=int(used), limit=limit))
+    return windows
+
+
+class _CallBudget:
+    """Counts API calls and refuses one that would exceed any quota window."""
+
+    def __init__(self, remaining: int):
+        self.remaining = remaining
+        self.calls = 0
+
+    def spend(self) -> None:
+        if self.calls >= self.remaining:
+            raise QuotaExhausted("Adzuna API quota reached; stopped before exceeding it.")
+        self.calls += 1
+
+
+# --- Fetching ----------------------------------------------------------------
+
+
+def settings_fingerprint(settings: AdzunaSettings) -> str:
+    """Hash of everything sent to Adzuna. In-app filters (title exclude,
+    company blocklist, results shown) are left out on purpose: editing them
+    re-reads stored postings without spending API calls."""
+    searched = {name: _search_params(settings, extra) for name, extra in _buckets(settings).items()}
+    searched["max_pages"] = settings.max_pages
+    return hashlib.sha256(json.dumps(searched, sort_keys=True).encode()).hexdigest()[:32]
+
+
+def _parse_created(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed
+
+
+def _to_int(value) -> int | None:
+    try:
+        return int(round(float(value)))
+    except (TypeError, ValueError):
+        return None
 
 
 def _parse_job(raw: dict, bucket: str) -> AdzunaJob | None:
     adzuna_id = str(raw.get("id", ""))
     if not adzuna_id:
         return None
-    company_obj = raw.get("company") or {}
-    location_obj = raw.get("location") or {}
-    title = raw.get("title") or "Untitled"
-    location = location_obj.get("display_name") or ""
-    description = raw.get("description") or ""
+    location = (raw.get("location") or {}).get("display_name") or ""
     if bucket == "virginia" and _is_dc_area(location):
         return None
+    title = raw.get("title") or "Untitled"
+    description = raw.get("description") or ""
     return AdzunaJob(
         adzuna_id=adzuna_id,
         title=title,
-        company=company_obj.get("display_name") or "Unknown",
+        company=(raw.get("company") or {}).get("display_name") or "Unknown",
         location=location,
-        salary_min=raw.get("salary_min"),
-        salary_max=raw.get("salary_max"),
+        salary_min=_to_int(raw.get("salary_min")),
+        salary_max=_to_int(raw.get("salary_max")),
+        salary_is_predicted=str(raw.get("salary_is_predicted", "0")) == "1",
+        contract_time=raw.get("contract_time"),
+        category=(raw.get("category") or {}).get("label"),
         redirect_url=raw.get("redirect_url") or "",
         description=description,
-        created=raw.get("created") or "",
+        posted_at=_parse_created(raw.get("created")),
         inferred_remote_status=infer_remote_status(title, description, location),
-        bucket=bucket,
     )
+
+
+def _buckets(settings: AdzunaSettings) -> dict[str, dict]:
+    return {
+        "remote": {"what_or": settings.search_what_or},
+        "slc": {"where": settings.slc_where, "distance": settings.slc_distance},
+        "virginia": {"where": settings.va_where, "distance": settings.va_distance},
+        "charlotte": {"where": settings.charlotte_where, "distance": settings.charlotte_distance},
+    }
+
+
+def _search_params(settings: AdzunaSettings, extra: dict) -> dict:
+    """Search terms shared by every bucket plus the bucket's own. Blank
+    optional terms are omitted rather than sent empty."""
+    params = {
+        "what": settings.search_what,
+        "what_and": settings.search_what_and,
+        "what_exclude": settings.search_what_exclude,
+        "title_only": settings.search_title_only,
+        "salary_min": settings.salary_min,
+        **extra,
+    }
+    return {k: v for k, v in params.items() if v not in ("", None)}
+
+
+@dataclass
+class _FetchResult:
+    jobs: dict[str, AdzunaJob] = field(default_factory=dict)
+    hits: dict[str, list[dict]] = field(default_factory=dict)
+    counts: dict[str, dict] = field(default_factory=dict)
 
 
 def _fetch_bucket(
@@ -178,136 +281,117 @@ def _fetch_bucket(
     settings: AdzunaSettings,
     bucket: str,
     extra: dict,
-) -> list[AdzunaJob]:
-    params = {
-        "app_id": ADZUNA_APP_ID,
-        "app_key": ADZUNA_APP_KEY,
-        "results_per_page": 25,
-        "what": settings.search_what,
-        "what_and": settings.search_what_and,
-        "salary_min": settings.salary_min,
-        "salary_include_unknown": "1",
-        "full_time": "1",
-        "max_days_old": 30,
-        **extra,
-    }
-    response = client.get(ADZUNA_BASE, params=params, timeout=20.0)
-    response.raise_for_status()
-    data = response.json()
-    jobs = []
-    for raw in data.get("results", []):
-        parsed = _parse_job(raw, bucket)
-        if parsed:
-            jobs.append(parsed)
-    return jobs
-
-
-def _fetch_all_buckets(settings: AdzunaSettings) -> tuple[list[AdzunaJob], dict[str, int]]:
-    if not ADZUNA_APP_ID or not ADZUNA_APP_KEY:
-        raise ValueError("Adzuna API credentials are not configured. Set ADZUNA_APP_ID and ADZUNA_APP_KEY in .env")
-
-    buckets = {
-        "remote": {"what_or": settings.search_what_or},
-        "slc": {"where": settings.slc_where, "distance": settings.slc_distance},
-        "virginia": {"where": settings.va_where, "distance": settings.va_distance},
-        "charlotte": {"where": settings.charlotte_where, "distance": settings.charlotte_distance},
-    }
-    counts: dict[str, int] = {}
-    merged: dict[str, AdzunaJob] = {}
-
-    with httpx.Client() as client:
-        for name, extra in buckets.items():
-            jobs = _fetch_bucket(client, settings, name, extra)
-            counts[name] = len(jobs)
-            for job in jobs:
-                merged[job.adzuna_id] = job
-
-    filtered = [job for job in merged.values() if passes_relevance_filter(job)]
-    ranked = sorted(
-        filtered,
-        key=lambda j: (
-            -(j.salary_max or j.salary_min or 0),
-            j.created or "",
-        ),
-    )
-    return ranked[: settings.results_limit], counts
-
-
-def _cache_valid(settings: AdzunaSettings) -> bool:
-    fetched = _cache.get("fetched_at")
-    if not fetched:
-        return False
-    if _cache.get("settings_fingerprint") != _settings_fingerprint(settings):
-        return False
-    age = (datetime.now(timezone.utc) - fetched).total_seconds()
-    return age < ADZUNA_CACHE_TTL_SECONDS
-
-
-def get_adzuna_jobs(settings: AdzunaSettings, refresh: bool = False) -> AdzunaFeed:
-    if not refresh and _cache_valid(settings):
-        return AdzunaFeed(
-            jobs=_cache.get("jobs", []),
-            fetched_at=_cache.get("fetched_at"),
-            error=_cache.get("error"),
-            query_counts=_cache.get("query_counts", {}),
-            thin_results=len(_cache.get("jobs", [])) < 3,
+    budget: _CallBudget,
+    result: _FetchResult,
+) -> None:
+    search = _search_params(settings, extra)
+    hit = {"bucket": bucket, **search}
+    pages = max(1, min(settings.max_pages or 1, config.ADZUNA_MAX_PAGES_LIMIT))
+    received = 0
+    total = 0
+    for page in range(1, pages + 1):
+        budget.spend()
+        response = client.get(
+            ADZUNA_SEARCH_URL.format(page=page),
+            params={
+                "app_id": config.ADZUNA_APP_ID,
+                "app_key": config.ADZUNA_APP_KEY,
+                "results_per_page": config.ADZUNA_RESULTS_PER_PAGE,
+                "salary_include_unknown": "1",
+                "full_time": "1",
+                "max_days_old": config.POSTING_VISIBLE_DAYS,
+                # Newest first, so a regular refresh picks up everything new
+                # within the first page or two.
+                "sort_by": "date",
+                **search,
+            },
+            timeout=20.0,
         )
+        response.raise_for_status()
+        data = response.json()
+        results = data.get("results", [])
+        total = int(data.get("count") or 0)
+        received += len(results)
+        for raw in results:
+            job = _parse_job(raw, bucket)
+            if job is None or not passes_relevance_filter(job):
+                continue
+            result.jobs[job.adzuna_id] = job
+            result.hits.setdefault(job.adzuna_id, []).append(hit)
+        result.counts[bucket] = {"received": received, "available": total}
+        if received >= total or len(results) < config.ADZUNA_RESULTS_PER_PAGE:
+            break
 
-    try:
-        jobs, counts = _fetch_all_buckets(settings)
-        _cache["jobs"] = jobs
-        _cache["fetched_at"] = datetime.now(timezone.utc)
-        _cache["error"] = None
-        _cache["query_counts"] = counts
-        _cache["settings_fingerprint"] = _settings_fingerprint(settings)
-    except Exception as exc:
-        _cache["error"] = str(exc)
-        if not _cache.get("jobs"):
-            _cache["jobs"] = []
 
+def refresh_adzuna(
+    db: Session,
+    settings: AdzunaSettings,
+    client: httpx.Client | None = None,
+    now: datetime | None = None,
+) -> AdzunaFetch:
+    """Run every bucket, store what passes the location filter, and log the
+    fetch. Partial results are kept if a bucket fails or the quota runs out."""
+    now = now or utcnow()
+    fetch = AdzunaFetch(fetched_at=now, settings_fingerprint=settings_fingerprint(settings))
+    result = _FetchResult()
+    budget = _CallBudget(min(w.remaining for w in quota_usage(db, now)))
+    buckets = _buckets(settings)
+
+    if not config.ADZUNA_APP_ID or not config.ADZUNA_APP_KEY:
+        fetch.error = "Adzuna API credentials are not configured. Set ADZUNA_APP_ID and ADZUNA_APP_KEY in .env"
+    elif budget.remaining < len(buckets):
+        fetch.error = "Adzuna API quota nearly used up; refresh skipped. See the usage line for details."
+    else:
+        owns_client = client is None
+        client = client or httpx.Client()
+        try:
+            for name, extra in buckets.items():
+                _fetch_bucket(client, settings, name, extra, budget, result)
+        except Exception as exc:  # noqa: BLE001 - surfaced in the panel, partial results kept
+            fetch.error = str(exc)
+        finally:
+            if owns_client:
+                client.close()
+
+    fetch.api_calls = budget.calls
+    fetch.query_counts = result.counts
+    fetch.received_count = len(result.jobs)
+    fetch.new_count = job_postings.record_adzuna_results(db, result.jobs.values(), result.hits, now)
+    db.add(fetch)
+    db.commit()
+    return fetch
+
+
+def latest_fetch(db: Session, successful: bool = False) -> AdzunaFetch | None:
+    query = db.query(AdzunaFetch)
+    if successful:
+        query = query.filter(AdzunaFetch.error.is_(None))
+    return query.order_by(AdzunaFetch.fetched_at.desc(), AdzunaFetch.id.desc()).first()
+
+
+def needs_refresh(db: Session, settings: AdzunaSettings, now: datetime | None = None) -> bool:
+    """Any fetch attempt (failed ones included) resets the clock, so a broken
+    setup doesn't spend API calls on every page load."""
+    now = now or utcnow()
+    latest = latest_fetch(db)
+    if latest is None or latest.settings_fingerprint != settings_fingerprint(settings):
+        return True
+    return (now - latest.fetched_at).total_seconds() >= config.ADZUNA_CACHE_TTL_SECONDS
+
+
+def get_adzuna_feed(db: Session, settings: AdzunaSettings, refresh: bool = False) -> AdzunaFeed:
+    if refresh or needs_refresh(db, settings):
+        refresh_adzuna(db, settings)
+    latest = latest_fetch(db)
+    last_good = latest_fetch(db, successful=True)
+    visible = job_postings.visible_postings(db, settings, limit=settings.results_limit)
     return AdzunaFeed(
-        jobs=_cache.get("jobs", []),
-        fetched_at=_cache.get("fetched_at"),
-        error=_cache.get("error"),
-        query_counts=_cache.get("query_counts", {}),
-        thin_results=len(_cache.get("jobs", [])) < 3,
+        postings=visible.postings,
+        total=visible.total,
+        hidden_by_filters=visible.hidden_by_filters,
+        fetched_at=latest.fetched_at if latest else None,
+        error=latest.error if latest else None,
+        query_counts=latest.query_counts if latest else {},
+        new_since=last_good.fetched_at if last_good else None,
+        quota=quota_usage(db),
     )
-
-
-def get_cached_job(adzuna_id: str) -> AdzunaJob | None:
-    for job in _cache.get("jobs", []):
-        if job.adzuna_id == adzuna_id:
-            return job
-    return None
-
-
-def build_notes_blob(job: AdzunaJob) -> str:
-    lines = [
-        f"Imported from Adzuna (job id: {job.adzuna_id})",
-        f"Title: {job.title}",
-        f"Company: {job.company}",
-        f"Location: {job.location}",
-        f"Posted: {job.created}",
-        f"URL: {job.redirect_url}",
-        f"Search bucket: {job.bucket}",
-        "",
-        "Description snippet:",
-        job.description,
-    ]
-    return "\n".join(lines)
-
-
-def map_to_opportunity_prefill(job: AdzunaJob, settings: AdzunaSettings) -> dict:
-    return {
-        "company": job.company,
-        "posting_url": job.redirect_url,
-        "location_text": job.location,
-        "remote_status": job.inferred_remote_status or "",
-        "source": OpportunitySource.ADZUNA.value,
-        "stack": settings.stack_default,
-        "salary_min": job.salary_min or "",
-        "salary_max": job.salary_max or "",
-        "salary_currency": "USD",
-        "pipeline_stage": "new",
-        "notes_text": build_notes_blob(job),
-    }

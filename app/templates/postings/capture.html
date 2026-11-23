@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block page_class %}postings-capture{% endblock %}
+{% block title %}Send to Career Search — Career Search Guide{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Send to Career Search</h1>
+</div>
+
+{% if not valid_url %}
+<section class="card">
+  <p class="adzuna-message error">No job page URL was received. Use the <strong>Send to Career Search</strong> bookmarklet on a job posting page.</p>
+  <p><a href="/opportunities">Back to Opportunities</a></p>
+</section>
+{% else %}
+<section class="card capture-card">
+  <p class="meta">Page</p>
+  <p class="capture-url"><a href="{{ url }}" target="_blank" rel="noopener">{{ page_title or url }}</a></p>
+
+  <form method="post" action="/postings/capture" class="form-grid capture-form">
+    {% include "shared/partials/csrf_input.html" %}
+    <input type="hidden" name="url" value="{{ url }}">
+
+    <fieldset class="full-width capture-targets">
+      <legend>This page is…</legend>
+      {% for p in candidates %}
+      <label class="capture-option">
+        <input type="radio" name="target" value="{{ p.id }}" {% if loop.first %}checked{% endif %}>
+        the employer page for <strong>{{ p.title }}</strong> · {{ p.company }}
+        <span class="meta">(opened {{ p.opened_at.strftime('%b %d %H:%M') }} UTC)</span>
+      </label>
+      {% endfor %}
+      <label class="capture-option">
+        <input type="radio" name="target" value="new" {% if not candidates %}checked{% endif %}>
+        a new posting{% if source_for_url == 'ruby_on_remote' %} (RubyOnRemote){% endif %}
+      </label>
+    </fieldset>
+
+    <div class="full-width capture-new-fields">
+      <p class="meta">For a new posting:</p>
+      <label>Title<input type="text" name="title" value="{{ page_title }}"></label>
+      <label>Company<input type="text" name="company" value=""></label>
+      <label>Location<input type="text" name="location" value=""></label>
+    </div>
+
+    <div class="inline-actions full-width">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <button type="button" class="btn btn-ghost" onclick="window.close()">Cancel</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

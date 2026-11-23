@@ -203,23 +203,41 @@ Today's plan renders a **read-only** "Reach out (N due)" block listing up to 3 n
 - Register at [Adzuna Developer API](https://developer.adzuna.com/) for `app_id` + `app_key`.
 - Set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` in `.env` (see `.env.example`).
 - Search profile stored in **`adzuna_settings`** DB table (singleton); gear icon on panel opens settings modal. Defaults match `app/config.py` constants.
-- Panel runs **4 merged searches** (remote US, Salt Lake City metro, Virginia excluding DC, Charlotte metro).
+- Panel runs **4 merged searches** (remote US, Salt Lake City metro, Virginia excluding DC, Charlotte metro), newest first (`sort_by=date`), 50 results per page, `max_pages` pages per search (1–3; one API call per page).
 - Post-filter drops on-site listings outside allowed regions (SLC metro, Virginia non-DC, Charlotte metro); remote/hybrid always kept.
-- Results cached **4 hours** in memory; cache busts on settings save or **Refresh Jobs**.
-- **Add** opens a modal pre-filling opportunity fields; source set to `adzuna`; snippet + metadata in Notes.
-- Remote/hybrid/on-site is **inferred** from title/description/location (Adzuna has no dedicated remote field).
+- **Every result that passes the post-filter is stored** in `job_postings`, deduped on the Adzuna id. Re-sightings refresh Adzuna-owned fields and `last_seen_at`, and append to `search_hits` (which bucket and terms found it). User state (opened, dismissed, captured URL, linked opportunity) is never overwritten.
+- Each refresh is logged in `adzuna_fetches` (API calls spent, per-bucket counts, new postings, error). Page loads refresh only when the latest fetch is older than 4 hours or the search terms changed.
+- **Quota guard:** API calls are summed over rolling windows matching the trial plan (15/minute, 150/day, 750/week, 1500/month). A refresh is skipped if fewer than 4 calls remain, and pagination stops before exceeding a limit. Usage shows in the panel header.
 
-| Opportunity field | From Adzuna |
+**Search terms** (all sent to Adzuna, which matches them against the full posting with stemming, so "developer" also matches "development"). Terms in different fields are ANDed together:
+
+| Setting | Adzuna param | Meaning |
+|---|---|---|
+| Keywords | `what` | all words must appear (title or description) |
+| Required keywords | `what_and` | all words must appear |
+| Remote search: any of | `what_or` | remote bucket only; at least one word must appear |
+| Exclude | `what_exclude` | drop postings containing any of these words |
+| Title must contain | `title_only` | all words must appear in the title |
+
+At least one of keywords, required keywords, or title must be set. Measured 2026-11-21 (US-wide, ≥$135k, 30 days): `what=software developer` + `what_and=Ruby rails integration` → 34; + `what_and=ruby` → 224; `what_and=ruby` alone → 481; `title_only=software engineer` + `what_and=ruby` → 157.
+
+**In-app filters** (applied when reading stored postings, no API calls): hide titles containing a term (whole-word, case-insensitive), blocked companies (exact name, case-insensitive), results shown.
+
+**Panel** shows stored postings awaiting a decision: not dismissed, not linked to an opportunity, seen within 30 days, not filtered, newest discoveries first. Badges: **New** (first seen in the latest successful fetch, not yet opened), **Employer URL** (captured). Actions: **Add** (opportunity modal, links the posting), **Dismiss**, **Block** (adds the company to the blocklist). Predicted salaries display as `~$Xk (est.)`.
+
+**Bookmarklet capture:** the title link goes through `/postings/{id}/open`, which records `opened_at` and redirects to Adzuna. On the employer page, the "Send to Career Search" bookmarklet opens `/postings/capture?url=…&title=…`. That page offers recently opened postings without an employer URL (newest first, last 7 days) or "a new posting" (title and company required; RubyOnRemote URLs get source `ruby_on_remote`, others `manual`). URLs are normalized (lowercased host, no fragment, tracking params like `utm_*` stripped, other query params kept) and deduped. The app never fetches third-party job pages itself.
+
+| Opportunity field | From stored posting |
 |-------------------|-------------|
-| company | company.display_name |
-| posting_url | redirect_url |
-| location_text | location.display_name |
+| company | company |
+| posting_url | captured employer URL, else Adzuna `redirect_url` |
+| location_text | location |
 | remote_status | inferred |
-| source | adzuna |
+| source | adzuna / ruby_on_remote / direct (manual) |
 | stack | configurable default (Ruby) |
-| salary_min / salary_max | API values |
+| salary_min / salary_max | API values, **blank if predicted** |
 | pipeline_stage | new |
-| notes | formatted snippet + metadata |
+| notes | formatted snippet + metadata (incl. estimate note, search buckets) |
 
 ## Page CSS classes
 

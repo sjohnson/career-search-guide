@@ -1101,6 +1101,68 @@ body {
   font-size: 0.85rem;
 }
 
+.adzuna-quota,
+.adzuna-summary {
+  font-size: 0.8rem;
+}
+
+.adzuna-table .badge {
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  vertical-align: middle;
+}
+
+.badge-new {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.badge-url {
+  background: var(--warm-soft);
+  color: #9a5b2e;
+  text-decoration: none;
+}
+
+.adzuna-table tr.posting-opened td:first-child > a:first-child {
+  color: var(--muted);
+}
+
+.adzuna-table .salary-estimate {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.adzuna-table .posting-actions {
+  white-space: nowrap;
+}
+
+.bookmarklet {
+  cursor: grab;
+  white-space: nowrap;
+}
+
+.capture-card {
+  max-width: 720px;
+}
+
+.capture-url {
+  word-break: break-all;
+  margin-top: 0;
+}
+
+.capture-targets {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+}
+
+.capture-option {
+  display: block;
+  margin: 0.4rem 0;
+  font-weight: normal;
+}
+
 .opportunity-modal {
   border: none;
   border-radius: var(--radius);

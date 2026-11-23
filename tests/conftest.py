@@ -11,6 +11,8 @@ from sqlalchemy import text
 ROOT = Path(__file__).resolve().parent.parent
 
 TABLES_TO_TRUNCATE = [
+    "job_postings",
+    "adzuna_fetches",
     "daily_plan_items",
     "daily_plan_dismissals",
     "notes",
@@ -31,6 +33,11 @@ def pytest_configure(config) -> None:
     os.environ["DATABASE_URL"] = "sqlite:///./data/test.db"
     os.environ["TESTING"] = "1"
     os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest")
+    # Blank (not unset) so load_dotenv, which never overrides existing
+    # variables, can't pull the real keys from .env: tests that load the
+    # Opportunities page would otherwise spend live Adzuna API calls.
+    os.environ["ADZUNA_APP_ID"] = ""
+    os.environ["ADZUNA_APP_KEY"] = ""
 
     alembic_config = Config(str(ROOT / "alembic.ini"))
     alembic_config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
@@ -45,26 +52,30 @@ def csrf_from_html(html: str) -> str:
 
 @pytest.fixture(autouse=True)
 def clean_database():
-    from app.database import SessionLocal
+    from app.database import engine
 
     yield
-    db = SessionLocal()
-    try:
-        # Truncation ignores foreign keys so tables can be cleared in any
-        # order. The pragma MUST be restored afterwards: it is connection
-        # scoped, the connection goes back into the pool, and the
-        # "connect"-time listener in app.database only fires for brand new
-        # connections — so leaving it off silently disables every ondelete
-        # rule for the rest of the run.
-        db.execute(text("PRAGMA foreign_keys=OFF"))
-        for table in TABLES_TO_TRUNCATE:
-            db.execute(text(f"DELETE FROM {table}"))
-        db.commit()
-    finally:
-        # Outside any transaction — SQLite treats this pragma as a no-op
-        # while one is open.
-        db.execute(text("PRAGMA foreign_keys=ON"))
-        db.close()
+    # Truncation ignores foreign keys so tables can be cleared in any order.
+    # The pragma MUST be restored afterwards, on the SAME connection: it is
+    # connection scoped, the connection goes back into the pool, and the
+    # "connect"-time listener in app.database only fires for brand new
+    # connections, so leaving it off silently disables every ondelete rule for
+    # the rest of the run. Hence one explicit Connection, not a Session: a
+    # Session returns its connection to the pool on commit, and the next
+    # statement may check out a different one once the pool holds more than
+    # one idle connection.
+    with engine.connect() as conn:
+        conn.execute(text("PRAGMA foreign_keys=OFF"))
+        try:
+            for table in TABLES_TO_TRUNCATE:
+                conn.execute(text(f"DELETE FROM {table}"))
+            conn.commit()
+        finally:
+            # Outside any transaction: SQLite treats this pragma as a no-op
+            # while one is open.
+            conn.rollback()
+            conn.execute(text("PRAGMA foreign_keys=ON"))
+            conn.commit()
 
 
 @pytest.fixture
