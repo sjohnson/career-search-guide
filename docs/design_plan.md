@@ -204,8 +204,8 @@ Today's plan renders a **read-only** "Reach out (N due)" block listing up to 3 n
 - Set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` in `.env` (see `.env.example`).
 - Search profile stored in **`adzuna_settings`** DB table (singleton); gear icon on panel opens settings modal. Defaults match `app/config.py` constants.
 - Panel runs **4 merged searches** (remote US, Salt Lake City metro, Virginia excluding DC, Charlotte metro), newest first (`sort_by=date`), 50 results per page, `max_pages` pages per search (1–3; one API call per page).
-- Post-filter drops on-site listings outside allowed regions (SLC metro, Virginia non-DC, Charlotte metro); remote/hybrid always kept.
-- **Every result that passes the post-filter is stored** in `job_postings`, deduped on the Adzuna id. Re-sightings refresh Adzuna-owned fields and `last_seen_at`, and append to `search_hits` (which bucket and terms found it). User state (opened, dismissed, captured URL, linked opportunity) is never overwritten.
+- **Posting rules** (`app/services/posting_rules.py`) run before storing; see below.
+- **Every result that passes the posting rules is stored** in `job_postings`, deduped on the Adzuna id. Re-sightings refresh Adzuna-owned fields and `last_seen_at`, and append to `search_hits` (which bucket and terms found it). User state (opened, dismissed, captured URL, linked opportunity) is never overwritten.
 - Each refresh is logged in `adzuna_fetches` (API calls spent, per-bucket counts, new postings, error). Page loads refresh only when the latest fetch is older than 4 hours or the search terms changed.
 - **Quota guard:** API calls are summed over rolling windows matching the trial plan (15/minute, 150/day, 750/week, 1500/month). A refresh is skipped if fewer than 4 calls remain, and pagination stops before exceeding a limit. Usage shows in the panel header.
 
@@ -221,7 +221,20 @@ Today's plan renders a **read-only** "Reach out (N due)" block listing up to 3 n
 
 At least one of keywords, required keywords, or title must be set. Measured 2026-11-21 (US-wide, ≥$135k, 30 days): `what=software developer` + `what_and=Ruby rails integration` → 34; + `what_and=ruby` → 224; `what_and=ruby` alone → 481; `title_only=software engineer` + `what_and=ruby` → 157.
 
-**In-app filters** (applied when reading stored postings, no API calls): hide titles containing a term (whole-word, case-insensitive), blocked companies (exact name, case-insensitive), results shown.
+**Posting rules** (one function, `PostingRules.rejection_reason`, run before storing and again when reading, so a tightened rule also hides postings saved earlier; editing them costs no API calls). Gathering keeps only likely-relevant postings with fixed, explainable rules; judging fit is ai-job-search's `/rank`. Rejected results aren't stored: each fetch logs per-rule counts plus up to 10 samples in `adzuna_fetches.rejections`, shown under "Last fetch" on the panel. Adzuna returns live postings on every refresh, so a loosened rule brings postings back on the next refresh. Hand-captured postings bypass the rules. Default term lists were drafted by ai-job-search (`job_scraper/adzuna-exclusion-terms.md`, 2026-11-21). Personal entries (non-compete employers and the like) live in the gitignored `posting_rules.local.toml`, `.env`-style: each list it defines replaces the code default (format in `posting_rules.example.toml`). New or blank settings lists are seeded from the result; after that the lists are edited in the settings window. Lists match whole words, case-insensitively (`+` and `#` count as word characters, so "Java" misses "JavaScript" and "C" misses "C++").
+
+| Rule | Matched against | Effect |
+|---|---|---|
+| Blocked companies | company name | drop (non-competes, mission blocks, gambling operators; the panel's Block button adds here) |
+| Excluded industries | title or company name | drop (gambling, extractive lending/collections) |
+| Excluded title terms | title | drop (management, too junior, wrong discipline, relocation) |
+| Excluded title stacks | title | drop unless the title also says Ruby, Rails, Python or JavaScript |
+| Location | location + stated arrangement | see below |
+| Signal terms | title + description snippet | never drop; shown as tags |
+
+Never match employer names against the description: postings name non-compete companies as partners or clearinghouses.
+
+**Location rule.** The stored location is Adzuna's display name plus the state from `location.area` ("Herndon, Fairfax County, Virginia"); display names alone omit it. Kept: anything in the allowed regions (SLC metro, Virginia outside the DC metro, Charlotte metro), anything stated as remote, and anything the remote search found that states no arrangement. A bare city isn't evidence of on-site work. Dropped: on-site or hybrid stated outside the regions, and metro-search results outside the regions that say nothing about remote. The metro searches use a radius and do reach outside: on 2026-11-23, 46 "Virginia" results were mostly Northern Virginia (Fairfax, Arlington, Loudoun) plus Maryland. The DC metro is DC plus Arlington, Fairfax, Alexandria, Falls Church, Loudoun, Prince William and Manassas.
 
 **Panel** shows stored postings awaiting a decision: not dismissed, not linked to an opportunity, seen within 30 days, not filtered, newest discoveries first. Badges: **New** (first seen in the latest successful fetch, not yet opened), **Employer URL** (captured). Actions: **Add** (opportunity modal, links the posting), **Dismiss**, **Block** (adds the company to the blocklist). Predicted salaries display as `~$Xk (est.)`.
 

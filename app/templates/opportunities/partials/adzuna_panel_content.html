@@ -32,6 +32,33 @@
     </div>
   </div>
 
+  {% set fetch = adzuna.last_fetch %}
+  {% if fetch and fetch.received_count %}
+  <details class="meta adzuna-fetch-summary">
+    <summary>
+      Last fetch: {{ fetch.received_count }} received · {{ fetch.kept_count }} kept ({{ fetch.new_count }} new)
+      {%- if fetch.rejections %} · dropped:
+        {%- for rule, entry in fetch.rejections.items() | sort(attribute="1.count", reverse=true) %} {{ entry.count }} {{ rule_labels.get(rule, rule) }}{% if not loop.last %},{% endif %}{% endfor %}
+      {%- endif %}
+    </summary>
+    {% if fetch.rejections %}
+    <ul class="rejection-samples">
+      {% for rule, entry in fetch.rejections.items() | sort(attribute="1.count", reverse=true) %}
+      <li><strong>{{ rule_labels.get(rule, rule) | capitalize }}</strong> ({{ entry.count }}{% if entry.count > entry.samples | length %}, {{ entry.samples | length }} shown{% endif %}):
+        <ul>
+          {% for sample in entry.samples %}
+          <li>{{ sample.title }} — {{ sample.company }}{% if sample.location %}, {{ sample.location }}{% endif %} <span class="rejection-term">[{{ sample.term }}]</span></li>
+          {% endfor %}
+        </ul>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>No results were dropped.</p>
+    {% endif %}
+  </details>
+  {% endif %}
+
   {% if adzuna.error %}
   <p class="adzuna-message error">{{ adzuna.error }}</p>
   {% endif %}
@@ -39,14 +66,14 @@
   {% if not adzuna.postings %}
   <p class="adzuna-message">
     No postings awaiting review.
-    {% if adzuna.hidden_by_filters %}{{ adzuna.hidden_by_filters }} hidden by your title/company filters.{% endif %}
+    {% if adzuna.hidden_by_filters %}{{ adzuna.hidden_by_filters }} saved earlier are hidden by your current posting rules.{% endif %}
   </p>
   {% else %}
   {% if adzuna.thin_results %}
   <p class="adzuna-message subtle">Few matches. Consider broadening salary or keyword filters.</p>
   {% endif %}
   <p class="meta adzuna-summary">
-    Showing {{ adzuna.postings | length }} of {{ adzuna.total }} saved postings awaiting review{% if adzuna.hidden_by_filters %}; {{ adzuna.hidden_by_filters }} hidden by filters{% endif %}.
+    Showing {{ adzuna.postings | length }} of {{ adzuna.total }} saved postings awaiting review{% if adzuna.hidden_by_filters %}; {{ adzuna.hidden_by_filters }} saved earlier hidden by current rules{% endif %}.
   </p>
   <div class="table-scroll">
     <table class="data-table adzuna-table compact">
@@ -72,6 +99,9 @@
             {% if adzuna.new_since and job.first_seen_at >= adzuna.new_since and not job.opened_at %}
             <span class="badge badge-new">New</span>
             {% endif %}
+            {% for signal in adzuna.signals.get(job.id, []) %}
+            <span class="badge badge-signal" title="Signal term: worth a look, never filtered on">{{ signal }}</span>
+            {% endfor %}
             {% if job.posting_url %}
             <a class="badge badge-url" href="{{ job.posting_url }}" target="_blank" rel="noopener" title="Employer posting captured">Employer URL</a>
             {% endif %}

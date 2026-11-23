@@ -10,6 +10,7 @@ from app.models import JobPosting, REMOTE_STATUS_LABELS
 from app.services import job_postings
 from app.services.adzuna import get_adzuna_feed
 from app.services.adzuna_settings import get_or_create_adzuna_settings
+from app.services.posting_rules import RULE_LABELS
 from app.templating import templates
 
 router = APIRouter(prefix="/postings", tags=["postings"])
@@ -29,6 +30,7 @@ def panel_context(request: Request, db: Session, refresh: bool = False) -> dict:
         "adzuna": get_adzuna_feed(db, settings, refresh=refresh),
         "adzuna_remote_labels": REMOTE_STATUS_LABELS,
         "bookmarklet_href": bookmarklet_href(request),
+        "rule_labels": RULE_LABELS,
     }
 
 

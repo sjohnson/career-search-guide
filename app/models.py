@@ -90,9 +90,14 @@ class AdzunaSettings(Base):
     max_pages: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default=text("1")
     )
-    # In-app filters applied when reading stored postings (one entry per line).
+    # In-app posting rules (one entry per line; see app.services.posting_rules),
+    # applied before storing and again when reading.
     title_exclude: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     company_blocklist: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    industry_exclude: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    title_stack_exclude: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    signal_terms: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    title_require: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, onupdate=utcnow
     )
@@ -498,6 +503,19 @@ class AdzunaFetch(Base):
     new_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     settings_fingerprint: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Results the posting rules dropped before storing:
+    # {rule: {"count": n, "samples": [{title, company, location, term}]}}.
+    # `received_count` counts unique results before the rules ran.
+    rejections: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    @property
+    def rejected_count(self) -> int:
+        return sum(entry.get("count", 0) for entry in (self.rejections or {}).values())
+
+    @property
+    def kept_count(self) -> int:
+        return self.received_count - self.rejected_count
+
 
 class NetworkContact(Base):
     """A person in the job-search network.

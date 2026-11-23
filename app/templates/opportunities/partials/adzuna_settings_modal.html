@@ -23,9 +23,17 @@
     <label>Pages per search (50 results each; 1 API call per page)<input type="number" name="max_pages" value="{{ adzuna_settings.max_pages }}" min="1" max="{{ max_pages_limit }}" required></label>
     <p class="full-width meta">Space-separated words. Adzuna matches word stems ("developer" also matches "development"). At least one of keywords, required keywords, or title must be filled in.</p>
 
-    <h3 class="full-width settings-group-title">In-app filters (applied to saved postings; no API calls)</h3>
-    <label>Hide titles containing (one per line)<textarea name="title_exclude" rows="4" placeholder="Principal&#10;Manager">{{ adzuna_settings.title_exclude }}</textarea></label>
-    <label>Blocked companies (one per line)<textarea name="company_blocklist" rows="4">{{ adzuna_settings.company_blocklist }}</textarea></label>
+    <h3 class="full-width settings-group-title">Posting rules (checked before saving and when showing; no API calls)</h3>
+    <p class="full-width meta">One term per line, whole words, case-insensitive ("Java" doesn't match "JavaScript"). Dropped postings are counted under "Last fetch" on the panel. Loosening a rule brings matching postings back on the next refresh.</p>
+    <label>Blocked companies (company name only)<textarea name="company_blocklist" rows="5">{{ adzuna_settings.company_blocklist }}</textarea></label>
+    <label>Excluded industries (title or company name)<textarea name="industry_exclude" rows="5">{{ adzuna_settings.industry_exclude }}</textarea></label>
+    <label>Excluded title terms (always drop)<textarea name="title_exclude" rows="5" placeholder="Manager&#10;Junior">{{ adzuna_settings.title_exclude }}</textarea></label>
+    <label>Title must contain one of (blank = any title)<textarea name="title_require" rows="5">{{ adzuna_settings.title_require }}</textarea></label>
+    <label>Excluded title stacks (drop unless the title also says {{ stack_rescue | join(", ") }})<textarea name="title_stack_exclude" rows="5">{{ adzuna_settings.title_stack_exclude }}</textarea></label>
+    <label class="full-width">Signal terms (title or description; shown as tags, never drop)<textarea name="signal_terms" rows="3">{{ adzuna_settings.signal_terms }}</textarea></label>
+    <p class="full-width meta">Location: a posting from the remote search is dropped only when its text says on-site or hybrid, never mentions remote, and its location is outside SLC, Virginia (not DC) and Charlotte. Metro search results are inside those areas by construction.</p>
+
+    <h3 class="full-width settings-group-title">Display</h3>
     <label>Results to show<input type="number" name="results_limit" value="{{ adzuna_settings.results_limit }}" min="1" max="100" required></label>
     <label>Default stack (prefill)<input type="text" name="stack_default" value="{{ adzuna_settings.stack_default }}" required></label>
 

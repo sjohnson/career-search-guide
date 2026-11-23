@@ -8,7 +8,7 @@ page their own browser has opened. Nothing here fetches third-party pages.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Iterable
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.config import POSTING_VISIBLE_DAYS
 from app.models import AdzunaSettings, JobPosting, JobPostingSource, Opportunity, OpportunitySource
+from app.services.posting_rules import PostingRules, parse_lines  # noqa: F401 - parse_lines re-exported
 from app.utils import utcnow
 
 # Query parameters that identify a click, not a posting. Anything else is kept:
@@ -63,34 +64,6 @@ def _normalize_text(value: str) -> str:
 
 def make_dedupe_key(company: str, title: str) -> str:
     return f"{_normalize_text(company)}|{_normalize_text(title)}"[:800]
-
-
-def parse_lines(text: str | None) -> list[str]:
-    """One entry per line (commas also accepted), trimmed, blanks dropped."""
-    items = re.split(r"[\n,]", text or "")
-    return [item.strip() for item in items if item.strip()]
-
-
-@dataclass
-class PostingFilters:
-    title_terms: list[str]
-    blocked_companies: set[str]
-
-    @classmethod
-    def from_settings(cls, settings: AdzunaSettings) -> "PostingFilters":
-        return cls(
-            title_terms=parse_lines(settings.title_exclude),
-            blocked_companies={_normalize_text(c) for c in parse_lines(settings.company_blocklist)},
-        )
-
-    def excludes(self, posting: JobPosting) -> bool:
-        if _normalize_text(posting.company) in self.blocked_companies:
-            return True
-        title = posting.title or ""
-        return any(
-            re.search(rf"(?<![A-Za-z0-9]){re.escape(term)}(?![A-Za-z0-9])", title, re.IGNORECASE)
-            for term in self.title_terms
-        )
 
 
 # --- Ingest ------------------------------------------------------------------
@@ -187,24 +160,50 @@ class VisiblePostings:
     postings: list[JobPosting]
     total: int
     hidden_by_filters: int
+    signals: dict[int, list[str]] = field(default_factory=dict)
+
+
+def _buckets(posting: JobPosting) -> list[str]:
+    return [hit.get("bucket", "") for hit in posting.search_hits or []]
+
+
+def passes_rules(rules: PostingRules, posting: JobPosting) -> bool:
+    """Gathered postings must pass the current rules. Postings the user
+    captured by hand were chosen deliberately, so they always pass."""
+    if posting.source != JobPostingSource.ADZUNA.value:
+        return True
+    return (
+        rules.rejection_reason(
+            title=posting.title,
+            company=posting.company,
+            location=posting.location,
+            remote_status=posting.remote_status,
+            buckets=_buckets(posting),
+        )
+        is None
+    )
 
 
 def visible_postings(
     db: Session, settings: AdzunaSettings, limit: int, now: datetime | None = None
 ) -> VisiblePostings:
-    """Postings still awaiting a decision, newest discoveries first."""
+    """Postings still awaiting a decision, newest discoveries first. The
+    posting rules run again here, so a tightened rule hides postings that
+    were stored before it changed."""
     now = now or utcnow()
-    filters = PostingFilters.from_settings(settings)
+    rules = PostingRules.from_settings(settings)
     candidates = (
         _triage_query(db, now)
         .order_by(JobPosting.first_seen_at.desc(), JobPosting.posted_at.desc(), JobPosting.id.desc())
         .all()
     )
-    kept = [p for p in candidates if not filters.excludes(p)]
+    kept = [p for p in candidates if passes_rules(rules, p)]
+    shown = kept[:limit]
     return VisiblePostings(
-        postings=kept[:limit],
+        postings=shown,
         total=len(kept),
         hidden_by_filters=len(candidates) - len(kept),
+        signals={p.id: rules.signals(p.title, p.description) for p in shown},
     )
 
 

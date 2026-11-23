@@ -19,8 +19,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import config
-from app.models import AdzunaFetch, AdzunaSettings, JobPosting, RemoteStatus
+from app.models import AdzunaFetch, AdzunaSettings, JobPosting
 from app.services import job_postings
+from app.services.posting_rules import PostingRules, Rejection, infer_remote_status
 from app.utils import utcnow
 
 ADZUNA_SEARCH_URL = "https://api.adzuna.com/v1/api/jobs/us/search/{page}"
@@ -64,96 +65,12 @@ class AdzunaFeed:
     query_counts: dict = field(default_factory=dict)
     new_since: datetime | None = None
     quota: list[QuotaWindow] = field(default_factory=list)
+    signals: dict[int, list[str]] = field(default_factory=dict)
+    last_fetch: AdzunaFetch | None = None
 
     @property
     def thin_results(self) -> bool:
         return self.total < 3
-
-
-def infer_remote_status(title: str, description: str, location: str) -> str | None:
-    text = f"{title} {description} {location}".lower()
-    if "hybrid" in text:
-        return RemoteStatus.HYBRID.value
-    if any(k in text for k in ("remote", "work from home", "wfh", "telecommute")):
-        return RemoteStatus.REMOTE.value
-    if any(k in text for k in ("on-site", "onsite", "on site", "in office", "in-office")):
-        return RemoteStatus.ON_SITE.value
-    if location and location.lower() not in ("", "us", "usa", "united states"):
-        return RemoteStatus.ON_SITE.value
-    return None
-
-
-def _is_dc_area(location: str) -> bool:
-    loc = location.lower()
-    return "washington" in loc or "district of columbia" in loc or ", dc" in loc
-
-
-def _is_vague_location(location: str) -> bool:
-    loc = location.strip().lower()
-    return loc in ("", "us", "usa", "united states")
-
-
-def _is_slc_metro(location: str) -> bool:
-    loc = location.lower()
-    markers = (
-        "salt lake",
-        "slc",
-        "provo",
-        "lehi",
-        "draper",
-        "sandy",
-        "murray",
-        "orem",
-        "west valley",
-        "south jordan",
-        "herriman",
-        "american fork",
-        "pleasant grove",
-        "layton",
-        "bountiful",
-        "utah",
-    )
-    return any(m in loc for m in markers)
-
-
-def _is_virginia_allowed(location: str) -> bool:
-    if _is_dc_area(location):
-        return False
-    loc = location.lower()
-    return "virginia" in loc or ", va" in loc or loc.endswith(" va") or " va," in loc
-
-
-def _is_charlotte_metro(location: str) -> bool:
-    loc = location.lower()
-    markers = (
-        "charlotte",
-        "fort mill",
-        "rock hill",
-        "concord",
-        "gastonia",
-        "huntersville",
-        "matthews",
-        "pineville",
-        "indian trail",
-        "mooresville",
-    )
-    return any(m in loc for m in markers)
-
-
-def _location_in_allowed_region(location: str) -> bool:
-    return _is_slc_metro(location) or _is_virginia_allowed(location) or _is_charlotte_metro(location)
-
-
-def passes_relevance_filter(job: AdzunaJob) -> bool:
-    status = job.inferred_remote_status
-    if status in (RemoteStatus.REMOTE.value, RemoteStatus.HYBRID.value):
-        return True
-    if _is_vague_location(job.location):
-        return True
-    if status == RemoteStatus.ON_SITE.value:
-        return _location_in_allowed_region(job.location)
-    return True
-
 
 
 # --- Quota -------------------------------------------------------------------
@@ -193,9 +110,9 @@ class _CallBudget:
 
 
 def settings_fingerprint(settings: AdzunaSettings) -> str:
-    """Hash of everything sent to Adzuna. In-app filters (title exclude,
-    company blocklist, results shown) are left out on purpose: editing them
-    re-reads stored postings without spending API calls."""
+    """Hash of everything sent to Adzuna. In-app rules (see posting_rules)
+    and results shown are left out on purpose: editing them re-reads stored
+    postings without spending API calls."""
     searched = {name: _search_params(settings, extra) for name, extra in _buckets(settings).items()}
     searched["max_pages"] = settings.max_pages
     return hashlib.sha256(json.dumps(searched, sort_keys=True).encode()).hexdigest()[:32]
@@ -220,13 +137,23 @@ def _to_int(value) -> int | None:
         return None
 
 
-def _parse_job(raw: dict, bucket: str) -> AdzunaJob | None:
+def _location_text(location: dict) -> str:
+    """Adzuna's display name ("Herndon, Fairfax County") plus the state from
+    `area` (["US", "Virginia", "Fairfax County", "Herndon"]) when the name
+    doesn't already include it. Region checks depend on the state."""
+    name = location.get("display_name") or ""
+    area = location.get("area") or []
+    state = area[1] if len(area) > 1 else ""
+    if state and state.lower() not in name.lower():
+        return f"{name}, {state}" if name else state
+    return name
+
+
+def _parse_job(raw: dict) -> AdzunaJob | None:
     adzuna_id = str(raw.get("id", ""))
     if not adzuna_id:
         return None
-    location = (raw.get("location") or {}).get("display_name") or ""
-    if bucket == "virginia" and _is_dc_area(location):
-        return None
+    location = _location_text(raw.get("location") or {})
     title = raw.get("title") or "Untitled"
     description = raw.get("description") or ""
     return AdzunaJob(
@@ -276,6 +203,38 @@ class _FetchResult:
     counts: dict[str, dict] = field(default_factory=dict)
 
 
+REJECTION_SAMPLES_PER_RULE = 10
+
+
+def apply_rules(
+    rules: PostingRules, jobs: dict[str, AdzunaJob], hits: dict[str, list[dict]]
+) -> tuple[dict[str, AdzunaJob], dict]:
+    """Split received jobs into kept and a per-rule rejection summary:
+    {rule: {"count": n, "samples": [{"title", "company", "location", "term"}]}}.
+    Runs after every bucket, so a job found by both the remote search and a
+    metro search gets the metro search's location provenance."""
+    kept: dict[str, AdzunaJob] = {}
+    rejections: dict[str, dict] = {}
+    for adzuna_id, job in jobs.items():
+        reason: Rejection | None = rules.rejection_reason(
+            title=job.title,
+            company=job.company,
+            location=job.location,
+            remote_status=job.inferred_remote_status,
+            buckets=[hit["bucket"] for hit in hits.get(adzuna_id, [])],
+        )
+        if reason is None:
+            kept[adzuna_id] = job
+            continue
+        entry = rejections.setdefault(reason.rule, {"count": 0, "samples": []})
+        entry["count"] += 1
+        if len(entry["samples"]) < REJECTION_SAMPLES_PER_RULE:
+            entry["samples"].append(
+                {"title": job.title, "company": job.company, "location": job.location, "term": reason.term}
+            )
+    return kept, rejections
+
+
 def _fetch_bucket(
     client: httpx.Client,
     settings: AdzunaSettings,
@@ -283,10 +242,11 @@ def _fetch_bucket(
     extra: dict,
     budget: _CallBudget,
     result: _FetchResult,
+    max_pages: int,
 ) -> None:
     search = _search_params(settings, extra)
     hit = {"bucket": bucket, **search}
-    pages = max(1, min(settings.max_pages or 1, config.ADZUNA_MAX_PAGES_LIMIT))
+    pages = max(1, min(max_pages, config.ADZUNA_MAX_PAGES_LIMIT))
     received = 0
     total = 0
     for page in range(1, pages + 1):
@@ -313,8 +273,8 @@ def _fetch_bucket(
         total = int(data.get("count") or 0)
         received += len(results)
         for raw in results:
-            job = _parse_job(raw, bucket)
-            if job is None or not passes_relevance_filter(job):
+            job = _parse_job(raw)
+            if job is None:
                 continue
             result.jobs[job.adzuna_id] = job
             result.hits.setdefault(job.adzuna_id, []).append(hit)
@@ -328,9 +288,15 @@ def refresh_adzuna(
     settings: AdzunaSettings,
     client: httpx.Client | None = None,
     now: datetime | None = None,
+    max_pages: int | None = None,
 ) -> AdzunaFetch:
-    """Run every bucket, store what passes the location filter, and log the
-    fetch. Partial results are kept if a bucket fails or the quota runs out."""
+    """`max_pages` overrides the setting for this fetch only (a one-off
+    backfill); the logged fingerprint still reflects the saved settings, so
+    the next page load doesn't refetch.
+
+    Run every bucket, store what passes the posting rules, and log the
+    fetch with per-rule rejection counts. Partial results are kept if a
+    bucket fails or the quota runs out."""
     now = now or utcnow()
     fetch = AdzunaFetch(fetched_at=now, settings_fingerprint=settings_fingerprint(settings))
     result = _FetchResult()
@@ -346,7 +312,7 @@ def refresh_adzuna(
         client = client or httpx.Client()
         try:
             for name, extra in buckets.items():
-                _fetch_bucket(client, settings, name, extra, budget, result)
+                _fetch_bucket(client, settings, name, extra, budget, result, max_pages or settings.max_pages or 1)
         except Exception as exc:  # noqa: BLE001 - surfaced in the panel, partial results kept
             fetch.error = str(exc)
         finally:
@@ -355,8 +321,9 @@ def refresh_adzuna(
 
     fetch.api_calls = budget.calls
     fetch.query_counts = result.counts
+    kept, fetch.rejections = apply_rules(PostingRules.from_settings(settings), result.jobs, result.hits)
     fetch.received_count = len(result.jobs)
-    fetch.new_count = job_postings.record_adzuna_results(db, result.jobs.values(), result.hits, now)
+    fetch.new_count = job_postings.record_adzuna_results(db, kept.values(), result.hits, now)
     db.add(fetch)
     db.commit()
     return fetch
@@ -394,4 +361,6 @@ def get_adzuna_feed(db: Session, settings: AdzunaSettings, refresh: bool = False
         query_counts=latest.query_counts if latest else {},
         new_since=last_good.fetched_at if last_good else None,
         quota=quota_usage(db),
+        signals=visible.signals,
+        last_fetch=latest,
     )

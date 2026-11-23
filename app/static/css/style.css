@@ -1124,6 +1124,30 @@ body {
   text-decoration: none;
 }
 
+.badge-signal {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.adzuna-fetch-summary {
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.adzuna-fetch-summary summary {
+  cursor: pointer;
+}
+
+.adzuna-fetch-summary .rejection-samples {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.adzuna-fetch-summary .rejection-term {
+  color: var(--muted);
+}
+
 .adzuna-table tr.posting-opened td:first-child > a:first-child {
   color: var(--muted);
 }

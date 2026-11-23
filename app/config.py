@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
+# Personal posting-rule term lists (gitignored); see posting_rules.example.toml.
+POSTING_RULES_FILE = os.getenv("POSTING_RULES_FILE", str(BASE_DIR / "posting_rules.local.toml"))
+
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
@@ -52,7 +55,7 @@ ADZUNA_QUOTA_WINDOWS = (
 POSTING_VISIBLE_DAYS = 30
 ADZUNA_SALARY_MIN = 140_000
 ADZUNA_RESULTS_LIMIT = 10
-ADZUNA_SEARCH_WHAT = "senior software engineer"
+ADZUNA_SEARCH_WHAT = ""
 ADZUNA_SEARCH_WHAT_AND = "ruby"
 ADZUNA_SEARCH_WHAT_OR = "remote"
 ADZUNA_SLC_WHERE = "Salt Lake City"

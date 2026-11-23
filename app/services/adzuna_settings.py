@@ -15,6 +15,7 @@ from app.config import (
     ADZUNA_VA_WHERE,
 )
 from app.models import AdzunaSettings
+from app.services import posting_rules
 
 
 def default_adzuna_settings() -> AdzunaSettings:
@@ -31,6 +32,7 @@ def default_adzuna_settings() -> AdzunaSettings:
         charlotte_distance=ADZUNA_CHARLOTTE_DISTANCE,
         results_limit=ADZUNA_RESULTS_LIMIT,
         stack_default=ADZUNA_STACK_DEFAULT,
+        **{name: "\n".join(terms) for name, terms in posting_rules.default_rule_lists().items()},
     )
 
 
