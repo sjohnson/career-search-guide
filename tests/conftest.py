@@ -11,6 +11,7 @@ from sqlalchemy import text
 ROOT = Path(__file__).resolve().parent.parent
 
 TABLES_TO_TRUNCATE = [
+    "unemployment_contacts",
     "job_postings",
     "adzuna_fetches",
     "daily_plan_items",

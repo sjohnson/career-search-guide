@@ -1,0 +1,52 @@
+<form class="card unemployment-week"
+      id="week-{{ week.week_ending.isoformat() }}"
+      hx-post="/unemployment/weeks/{{ week.week_ending.isoformat() }}"
+      hx-target="this"
+      hx-swap="outerHTML"
+      data-week-start="{{ week.start.isoformat() }}"
+      data-week-ending="{{ week.week_ending.isoformat() }}"{% if week.errors %}
+      data-dirty="1"{% endif %}>
+  {% include "shared/partials/csrf_input.html" %}
+  <div class="unemployment-week-header">
+    <h2 class="section-title">
+      Week ending {{ week.week_ending.strftime('%A') }}, {{ short_date(week.week_ending) }}, {{ week.week_ending.year }}
+      {% if week.week_ending == current_week_ending %}<span class="badge badge-current">This week</span>{% endif %}
+    </h2>
+    <p class="meta">
+      {{ short_date(week.start) }}–{{ short_date(week.week_ending) }} ·
+      {% if week.errors %}not saved{% else %}{{ week.complete_count }} of {{ required_contacts }} complete{% if week.saved_count > week.complete_count %} ({{ week.saved_count - week.complete_count }} partly filled){% endif %}{% endif %}
+      {% if saved is defined and saved %}<span class="unemployment-saved">· Saved</span>{% endif %}
+    </p>
+  </div>
+
+  {% if week.errors %}
+  <ul class="unemployment-errors">
+    {% for error in week.errors %}<li>{{ error }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+
+  <div class="table-scroll">
+    <table class="data-table compact unemployment-table">
+      <thead>
+        <tr>
+          <th>Date of contact</th>
+          <th>Company</th>
+          <th><a href="#contact-details-note" class="footnote-link">Contact details<sup>*</sup></a></th>
+          <th>Position title</th>
+          <th>Method of contact</th>
+          <th>Results</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in week.rows %}
+          {% include "unemployment/partials/row.html" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="inline-actions unemployment-actions">
+    <button type="button" class="btn btn-ghost btn-sm" data-add-row>+ Add row</button>
+    <button type="submit" class="btn btn-primary btn-sm">Save week</button>
+  </div>
+</form>

@@ -285,3 +285,14 @@ Schema upgrades run automatically on startup via Alembic (`alembic upgrade head`
 - Swap SQLite for Postgres via `DATABASE_URL`
 - Render/Fly.io free/hobby tiers suitable for personal use
 - GitHub repo: push when ready for remote backup and deploy hook
+
+
+## Unemployment tab
+
+Weekly work-search log for Utah DWS unemployment claims (`/unemployment`, `unemployment_contacts`). DWS asks for, per contact: (1) date of contact; (2) company name; (3) company address, phone number, email, web link, *or* person contacted (any one, stored as **Contact details**); (4) position title; (5) method of contact; (6) results.
+
+- A claim week runs Sunday through Saturday and is labeled "Week ending <Saturday>".
+- The page shows this week, every earlier week with saved contacts, and any week reached through the "Show week ending …" link, newest first.
+- Each week's table starts with 4 rows (the weekly requirement), and **Add row** adds more. **Save week** replaces the week's rows with what's on screen: blank rows are dropped, so clearing a row deletes it.
+- A contact date outside the week is rejected, and nothing is saved; the typed rows come back with the error. The header counts rows with all six fields filled ("1 of 4 complete").
+- Method and Results are free text with suggestions.

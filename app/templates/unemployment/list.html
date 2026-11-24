@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block page_class %}unemployment{% endblock %}
+{% block title %}Unemployment — Career Search Guide{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Unemployment</h1>
+</div>
+<p class="meta unemployment-intro">
+  Work-search contacts for your weekly Utah DWS claim. Weeks run Sunday through Saturday.
+  Log at least {{ required_contacts }} contacts per week; use <strong>Add row</strong> for more.
+</p>
+
+{% for week in weeks %}
+  {% include "unemployment/partials/week.html" %}
+{% endfor %}
+
+<p class="unemployment-earlier">
+  <a href="/unemployment?week={{ earlier_week.isoformat() }}" class="btn btn-ghost btn-sm">&larr; Show week ending {{ short_date(earlier_week) }}, {{ earlier_week.year }}</a>
+</p>
+
+<datalist id="unemployment-methods">
+  {% for option in method_suggestions %}<option value="{{ option }}">{% endfor %}
+</datalist>
+<datalist id="unemployment-results">
+  {% for option in result_suggestions %}<option value="{{ option }}">{% endfor %}
+</datalist>
+
+<p class="meta unemployment-footnote" id="contact-details-note">
+  <sup>*</sup> <strong>Contact details:</strong> any one of the company's address, phone number,
+  email, or web link (such as the job posting URL), or the name of the person you contacted.
+</p>
+
+<template id="unemployment-blank-row">
+  {% set row = none %}
+  {% include "unemployment/partials/row.html" %}
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Add row: clone the blank-row template into that week's table.
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-add-row]");
+    if (!button) return;
+    const form = button.closest("form");
+    const template = document.getElementById("unemployment-blank-row");
+    const row = template.content.firstElementChild.cloneNode(true);
+    const dateInput = row.querySelector('input[type="date"]');
+    dateInput.min = form.dataset.weekStart;
+    dateInput.max = form.dataset.weekEnding;
+    form.querySelector("tbody").appendChild(row);
+    form.dataset.dirty = "1";
+    row.querySelector("input").focus();
+  });
+
+  // Warn before leaving with unsaved edits.
+  document.addEventListener("input", (event) => {
+    const form = event.target.closest("form.unemployment-week");
+    if (form) form.dataset.dirty = "1";
+  });
+  window.addEventListener("beforeunload", (event) => {
+    if (document.querySelector('form.unemployment-week[data-dirty="1"]')) {
+      event.preventDefault();
+    }
+  });
+</script>
+{% endblock %}

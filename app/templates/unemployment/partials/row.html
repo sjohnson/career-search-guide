@@ -1,0 +1,13 @@
+<tr>
+  <td>
+    <input type="hidden" name="row_id" value="{{ row.id if row and row.id else '' }}">
+    <input type="date" name="contact_date" value="{{ row.contact_date if row else '' }}"
+           {% if week is defined and week %}min="{{ week.start.isoformat() }}" max="{{ week.week_ending.isoformat() }}"{% endif %}
+           aria-label="Date of contact">
+  </td>
+  <td><input type="text" name="company" maxlength="255" value="{{ row.company if row else '' }}" aria-label="Company"></td>
+  <td><input type="text" name="contact_details" maxlength="500" value="{{ row.contact_details if row else '' }}" aria-label="Contact details" placeholder="Link, phone, email, or name"></td>
+  <td><input type="text" name="position_title" maxlength="255" value="{{ row.position_title if row else '' }}" aria-label="Position title"></td>
+  <td><input type="text" name="method" maxlength="100" list="unemployment-methods" value="{{ row.method if row else '' }}" aria-label="Method of contact"></td>
+  <td><input type="text" name="result" maxlength="500" list="unemployment-results" value="{{ row.result if row else '' }}" aria-label="Results"></td>
+</tr>
