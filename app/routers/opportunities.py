@@ -21,6 +21,7 @@ from app import config
 from app.routers.postings import panel_context
 from app.services import job_postings
 from app.services.adzuna_settings import get_or_create_adzuna_settings
+from app.services.posting_rules import TITLE_STACK_RESCUE
 from app.services.daily_plan import get_or_create_settings, get_primary_note_body, set_primary_note
 from app.services.opportunities import (
     ARCHIVE_ON_STAGES,
@@ -254,7 +255,7 @@ def adzuna_settings_form(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "opportunities/partials/adzuna_settings_modal.html",
-        {"adzuna_settings": adzuna_settings, "max_pages_limit": config.ADZUNA_MAX_PAGES_LIMIT},
+        {"adzuna_settings": adzuna_settings, "max_pages_limit": config.ADZUNA_MAX_PAGES_LIMIT, "stack_rescue": TITLE_STACK_RESCUE},
     )
 
 
@@ -269,6 +270,10 @@ def update_adzuna_settings(
     max_pages: str = Form("1"),
     title_exclude: str = Form(""),
     company_blocklist: str = Form(""),
+    industry_exclude: str = Form(""),
+    title_stack_exclude: str = Form(""),
+    signal_terms: str = Form(""),
+    title_require: str = Form(""),
     salary_min: str = Form(...),
     slc_where: str = Form(...),
     slc_distance: str = Form(...),
@@ -288,7 +293,7 @@ def update_adzuna_settings(
             "opportunities/partials/adzuna_settings_modal.html",
             {
                 "adzuna_settings": adzuna_settings,
-                "max_pages_limit": config.ADZUNA_MAX_PAGES_LIMIT,
+                "max_pages_limit": config.ADZUNA_MAX_PAGES_LIMIT, "stack_rescue": TITLE_STACK_RESCUE,
                 "error": "Fill in at least one of keywords, required keywords, or title. Settings not saved.",
             },
         )
@@ -301,6 +306,10 @@ def update_adzuna_settings(
         adzuna_settings.max_pages = max(1, min(int(max_pages), config.ADZUNA_MAX_PAGES_LIMIT))
     adzuna_settings.title_exclude = "\n".join(job_postings.parse_lines(title_exclude))
     adzuna_settings.company_blocklist = "\n".join(job_postings.parse_lines(company_blocklist))
+    adzuna_settings.industry_exclude = "\n".join(job_postings.parse_lines(industry_exclude))
+    adzuna_settings.title_stack_exclude = "\n".join(job_postings.parse_lines(title_stack_exclude))
+    adzuna_settings.signal_terms = "\n".join(job_postings.parse_lines(signal_terms))
+    adzuna_settings.title_require = "\n".join(job_postings.parse_lines(title_require))
     adzuna_settings.salary_min = int(salary_min) if salary_min.isdigit() else adzuna_settings.salary_min
     adzuna_settings.slc_where = slc_where.strip()
     adzuna_settings.slc_distance = int(slc_distance) if slc_distance.isdigit() else adzuna_settings.slc_distance

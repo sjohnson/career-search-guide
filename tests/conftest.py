@@ -38,6 +38,8 @@ def pytest_configure(config) -> None:
     # Opportunities page would otherwise spend live Adzuna API calls.
     os.environ["ADZUNA_APP_ID"] = ""
     os.environ["ADZUNA_APP_KEY"] = ""
+    # Tests see the code defaults, never the developer's personal lists.
+    os.environ["POSTING_RULES_FILE"] = str(ROOT / "tests" / "no-such-posting-rules.toml")
 
     alembic_config = Config(str(ROOT / "alembic.ini"))
     alembic_config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])

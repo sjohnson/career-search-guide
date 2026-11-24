@@ -1,0 +1,27 @@
+# Personal posting-rule term lists, the way .env holds personal settings.
+#
+# Copy to posting_rules.local.toml (gitignored) and edit. Each list defined
+# here replaces the built-in default from app/services/posting_rules.py; lists
+# left out keep their defaults; an empty list turns that rule off. Set
+# POSTING_RULES_FILE to use a different path.
+#
+# These seed the Adzuna settings when they're first created (or when a list
+# is blank). After that, edit the lists in the app's Adzuna settings window.
+# Terms match whole words, case-insensitively.
+
+# Employer name only. Include the built-in defaults you still want, since this
+# replaces them.
+company_blocklist = [
+    "DraftKings",
+    "FanDuel",
+    "PrizePicks",
+    "Underdog",
+    "Former Employer Inc",  # e.g. a non-compete
+]
+
+# Other lists, same format:
+# industry_exclude = [...]      title or company name; drop
+# title_exclude = [...]         title; drop
+# title_require = [...]         title must contain one of these
+# title_stack_exclude = [...]   title; drop unless it also names Ruby/Rails/Python/JavaScript
+# signal_terms = [...]          title or description; tags only

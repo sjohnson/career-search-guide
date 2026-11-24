@@ -22,3 +22,6 @@ htmlcov/
 uploads/
 tmp/
 docs/ai-job-search-integration-feasibility.md
+
+# Personal posting-rule term lists (see posting_rules.example.toml)
+posting_rules.local.toml
