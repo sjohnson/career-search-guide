@@ -1425,3 +1425,78 @@ body {
   font-size: 0.85rem;
   color: var(--accent);
 }
+
+/* --- Unemployment ------------------------------------------------------- */
+
+.unemployment-intro {
+  margin: -0.5rem 0 1rem;
+}
+
+.unemployment-week {
+  margin-bottom: 1.25rem;
+}
+
+.unemployment-week-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.unemployment-week-header .meta {
+  margin: 0;
+}
+
+.badge-current {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.7rem;
+  vertical-align: middle;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.unemployment-saved {
+  color: var(--accent);
+}
+
+.unemployment-table {
+  min-width: 960px;
+  box-shadow: none;
+}
+
+.unemployment-table th,
+.unemployment-table td {
+  padding: 0.35rem 0.4rem;
+}
+
+.unemployment-table th:nth-child(1) { width: 9.5rem; }
+.unemployment-table th:nth-child(3) { width: 22%; }
+
+.unemployment-table input {
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.9rem;
+}
+
+.unemployment-table .footnote-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.unemployment-errors {
+  margin: 0 0 0.5rem;
+  padding-left: 1.1rem;
+  color: var(--danger);
+}
+
+.unemployment-actions {
+  justify-content: space-between;
+  margin-top: 0.6rem;
+}
+
+.unemployment-footnote {
+  margin-top: 1.5rem;
+}

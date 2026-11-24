@@ -609,3 +609,28 @@ class Note(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=utcnow, onupdate=utcnow
     )
+
+
+class UnemploymentContact(Base):
+    """One work-search contact logged for a Utah DWS weekly claim.
+
+    DWS asks for: (1) date of contact; (2) company name; (3) the company's
+    address, phone, email, web link, *or* the person contacted (any one, kept
+    in `contact_details`); (4) position title; (5) method of contact; and
+    (6) results. Weeks run Sunday through Saturday and are named by their
+    Saturday (`week_ending`), matching how DWS labels claim weeks.
+    """
+
+    __tablename__ = "unemployment_contacts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    week_ending: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    contact_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    company: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    contact_details: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    position_title: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    method: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    result: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow, onupdate=utcnow)
